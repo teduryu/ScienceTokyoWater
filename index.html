@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campus Water - 大学給水スポットマップ</title>
+    <title>ScienceTokyoWater</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
@@ -41,30 +41,24 @@
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .container {
-            padding: 20px;
-        }
+        .container { padding: 20px; }
 
         /* 画面切り替え用のスタイル */
-        .view-section {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        .view-section.active {
-            display: block;
-        }
+        .view-section { display: none; animation: fadeIn 0.3s ease; }
+        .view-section.active { display: block; }
         
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* マップのデザイン（見やすく大きく） */
         #map {
-            height: calc(100vh - 260px);
-            min-height: 400px;
+            height: 45vh;
+            min-height: 350px;
             width: 100%;
             border-radius: 20px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
             border: 2px solid white;
             z-index: 1;
@@ -80,139 +74,135 @@
             color: white;
             border: none;
             padding: 16px;
-            font-size: 1.05rem;
+            font-size: 1rem;
             border-radius: 50px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             cursor: pointer;
             box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
             font-weight: 700;
-            transition: transform 0.2s ease, background 0.2s ease;
+            transition: transform 0.2s ease;
         }
 
         .btn-large:active {
             transform: scale(0.97);
-            box-shadow: 0 5px 10px rgba(59, 130, 246, 0.2);
         }
 
-        .btn-large:disabled {
-            background: #94A3B8;
-            box-shadow: none;
-            cursor: not-allowed;
-            transform: none;
+        /* フィルタ・ソート操作エリア */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-item {
+            background: white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .control-item.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
         }
 
         .section-title {
             font-size: 1.1rem;
             font-weight: 700;
-            margin-bottom: 16px;
-            color: var(--text-main);
+            margin: 20px 0 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
+        /* スポットカードのデザイン */
         .spot-card {
             background-color: var(--card-bg);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
 
-        .spot-placename {
-            font-size: 0.85rem;
-            color: var(--primary-color);
-            margin-bottom: 4px;
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
             font-weight: 700;
         }
+        .status-open { background: #DCFCE7; color: #166534; }
+        .status-closed { background: #FEE2E2; color: #991B1B; }
 
-        .spot-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            margin: 0 0 6px 0;
-        }
+        .spot-placename { font-size: 0.8rem; color: var(--primary-color); font-weight: 700; }
+        .spot-title { font-size: 1rem; font-weight: 700; margin: 4px 0; }
+        .spot-distance { font-size: 0.8rem; color: var(--text-sub); line-height: 1.6; }
 
-        .spot-location {
-            font-size: 0.9rem;
-            color: var(--text-sub);
-            margin: 0 0 12px 0;
-            line-height: 1.4;
-        }
-
-        .spot-time {
-            font-size: 0.9rem;
-            background-color: #F8FAFC;
-            padding: 8px 12px;
-            border-radius: 10px;
-            display: inline-block;
-            margin-top: 4px;
-        }
-
+        /* 下部ナビゲーション */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
+            position: fixed; bottom: 0; width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: space-around;
-            padding: 12px 0 20px 0;
+            display: flex; justify-content: space-around;
+            padding: 10px 0 25px 0;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
             z-index: 1000;
         }
 
         .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.75rem;
-            color: var(--text-sub);
-            font-weight: 500;
+            display: flex; flex-direction: column; align-items: center;
+            font-size: 0.7rem; color: var(--text-sub); width: 33%;
             cursor: pointer;
-            width: 33%;
         }
-
-        .nav-icon {
-            font-size: 1.4rem;
-            transition: transform 0.2s ease;
-        }
-
-        .nav-item.active {
-            color: var(--primary-color);
-        }
-        .nav-item.active .nav-icon {
-            filter: grayscale(0) drop-shadow(0 2px 4px rgba(59, 130, 246, 0.4));
-            transform: translateY(-2px) scale(1.1);
-        }
+        .nav-item span:first-child { font-size: 1.4rem; margin-bottom: 2px; }
+        .nav-item.active { color: var(--primary-color); font-weight: 700; }
+        .nav-item.active span:first-child { transform: translateY(-2px); }
 
         .user-location-marker {
-            background-color: #EF4444;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            background-color: #3B82F6; width: 16px; height: 16px;
+            border-radius: 50%; border: 3px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.4);
         }
     </style>
 </head>
 <body>
 
-    <header>💧 Campus Water</header>
+    <header>💧 ScienceTokyoWater</header>
 
     <div class="container">
         
         <div id="view-map" class="view-section active">
             <div id="map"></div>
-            <button id="gps-btn" class="btn-large">
-                <span style="font-size: 1.2rem;">📍</span> 現在地から一番近い給水機を探す
-            </button>
+            <button id="gps-btn" class="btn-large">📍 近くのスポットを自動検索</button>
+            
+            <h2 class="section-title">表示エリア内のスポット</h2>
+            <div id="map-visible-list">
+                <p style="text-align: center; color: #666; font-size: 0.9rem;">データを読み込み中...</p>
+            </div>
         </div>
 
         <div id="view-list" class="view-section">
-            <h2 class="section-title">近くの給水スポット</h2>
-            <div id="spot-list">
+            <h2 class="section-title">スポット一覧</h2>
+            
+            <div class="controls">
+                <select id="sort-select" class="control-item">
+                    <option value="default">名前順</option>
+                    <option value="distance">現在地に近い順</option>
+                </select>
+                <div id="filter-open" class="control-item">🟢 営業中のみ</div>
+            </div>
+
+            <div id="full-spot-list">
                 <p style="text-align: center; color: #666; font-size: 0.9rem;">データを読み込み中...</p>
             </div>
         </div>
@@ -225,26 +215,18 @@
                 <p style="color: #666; font-size: 0.9rem;">現在、故障を報告する機能を開発しています。<br>もうしばらくお待ちください！</p>
             </div>
         </div>
-
     </div>
 
     <div class="bottom-nav">
-        <div class="nav-item active" data-target="view-map">
-            <span class="nav-icon">🗺️</span><span>マップ</span>
-        </div>
-        <div class="nav-item" data-target="view-list">
-            <span class="nav-icon">📋</span><span>リスト</span>
-        </div>
-        <div class="nav-item" data-target="view-report">
-            <span class="nav-icon">⚠️</span><span>故障報告</span>
-        </div>
+        <div class="nav-item active" data-target="view-map"><span>🗺️</span><span>マップ</span></div>
+        <div class="nav-item" data-target="view-list"><span>📋</span><span>リスト</span></div>
+        <div class="nav-item" data-target="view-report"><span>⚠️</span><span>報告</span></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -253,182 +235,208 @@
             projectId: "sciencetokyowater",
             storageBucket: "sciencetokyowater.firebasestorage.app",
             messagingSenderId: "1039095456448",
-            appId: "1:1039095456448:web:548ed9fcc01c811b470325",
-            measurementId: "G-MLWR226QD1"
+            appId: "1:1039095456448:web:548ed9fcc01c811b470325"
         };
 
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
         // --- 地図の初期化 ---
-        const campusLocation = [35.6061, 139.6833];
-        const map = L.map('map').setView(campusLocation, 16);
-        
+        const map = L.map('map').setView([35.6061, 139.6833], 16);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        let allSpots = []; 
+        let allSpots = [];
+        let userLocation = null;
+        let filterOpenOnly = false;
 
+        // --- 営業状態の判定ロジック ---
+        function isOpen(spot) {
+            const hoursStr = spot.available_hours;
+            const closedDays = spot.closed_days || [];
+            
+            const now = new Date();
+            const currentDay = now.getDay(); // 0:日, 1:月...
+            
+            if (closedDays.includes(currentDay)) {
+                return false; // 休業日
+            }
+
+            if (!hoursStr || hoursStr === "24時間" || hoursStr === "不明") return true;
+            try {
+                const currentTime = now.getHours() * 60 + now.getMinutes();
+                const [start, end] = hoursStr.split('-').map(t => {
+                    const [h, m] = t.trim().split(':').map(Number);
+                    return h * 60 + m;
+                });
+                return currentTime >= start && currentTime <= end;
+            } catch { 
+                return true; 
+            }
+        }
+
+        // --- 休業日テキストの生成 ---
+        function getClosedDaysText(closedDaysArray) {
+            if (!closedDaysArray || closedDaysArray.length === 0) return "";
+            const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+            const closedNames = closedDaysArray.map(d => dayNames[d]);
+            return ` <span style="color:#E11D48; font-weight:bold;">(休: ${closedNames.join(',')})</span>`;
+        }
+
+        // --- カードHTML生成 ---
+        function createCard(spot) {
+            const openStatus = isOpen(spot); 
+            const distText = spot.distance ? `📏 約${Math.round(spot.distance)}m<br>` : "";
+            const closedText = getClosedDaysText(spot.closed_days);
+            
+            return `
+                <div class="spot-card">
+                    <span class="status-badge ${openStatus ? 'status-open' : 'status-closed'}">
+                        ${openStatus ? '営業中' : '時間外'}
+                    </span>
+                    <div class="spot-placename">📍 ${spot.placename || "場所未設定"}</div>
+                    <div class="spot-title">${spot.name}</div>
+                    <div class="spot-distance">${distText}🕒 ${spot.available_hours || "不明"}${closedText}</div>
+                </div>
+            `;
+        }
+
+        // --- マップ直下のリスト更新 ---
+        function updateMapVisibleList() {
+            const container = document.getElementById("map-visible-list");
+            const bounds = map.getBounds();
+            const visibleSpots = allSpots.filter(s => bounds.contains(L.latLng(s.latitude, s.longitude)));
+            
+            container.innerHTML = visibleSpots.length ? visibleSpots.map(createCard).join('') 
+                : "<p style='text-align:center; padding: 15px; color:#666;'>この表示範囲には給水スポットがありません💧</p>";
+        }
+
+        // --- リストページ全体の更新（ソート・フィルタ対応） ---
+        function updateFullList() {
+            const container = document.getElementById("full-spot-list");
+            const sortBy = document.getElementById("sort-select").value;
+
+            let displaySpots = [...allSpots];
+
+            if (userLocation) {
+                displaySpots.forEach(s => {
+                    s.distance = L.latLng(userLocation).distanceTo(L.latLng(s.latitude, s.longitude));
+                });
+            }
+
+            if (filterOpenOnly) {
+                displaySpots = displaySpots.filter(s => isOpen(s));
+            }
+
+            if (sortBy === "distance" && userLocation) {
+                displaySpots.sort((a, b) => a.distance - b.distance);
+            } else {
+                displaySpots.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+            }
+
+            container.innerHTML = displaySpots.map(createCard).join('') || "<p style='text-align:center; padding: 20px; color:#666;'>条件に合うスポットがありません💧</p>";
+        }
+
+        // --- Firebaseからデータを取得 ---
         async function loadSpots() {
             try {
                 const querySnapshot = await getDocs(collection(db, "spots"));
-                
-                querySnapshot.forEach((doc) => {
+                querySnapshot.forEach(doc => {
                     const spot = doc.data();
-                    
                     if (spot.latitude && spot.longitude) {
                         const marker = L.marker([spot.latitude, spot.longitude]).addTo(map);
-                        const popupContent = `
+                        const closedText = getClosedDaysText(spot.closed_days);
+                        marker.bindPopup(`
                             <div style="font-size:0.85em; color:#3B82F6; margin-bottom:2px;">📍 ${spot.placename || "場所未設定"}</div>
                             <b style="font-size:1.1em;">${spot.name}</b><br>
-                            <span style="color:#666;">${spot.description || ""}</span><br>
-                            <div style="margin-top:6px;">🕒 使用可能時間: <b>${spot.available_hours || "不明"}</b></div>
-                        `;
-                        marker.bindPopup(popupContent);
-                        
-                        // ポップアップを開けるようにマーカー情報を保存
+                            <div style="margin-top:6px;">🕒 ${spot.available_hours || "不明"}${closedText}</div>
+                        `);
                         spot.marker = marker;
                         allSpots.push(spot);
                     }
                 });
-
-                updateSpotList();
-
+                updateMapVisibleList();
+                updateFullList();
             } catch (error) {
-                console.error("データの取得に失敗しました: ", error);
-                document.getElementById("spot-list").innerHTML = "<p style='text-align:center; color:red;'>データの読み込みに失敗しました。</p>";
+                console.error("データの読み込みに失敗:", error);
+                document.getElementById("map-visible-list").innerHTML = "<p style='color:red;'>データの読み込みに失敗しました。</p>";
+                document.getElementById("full-spot-list").innerHTML = "<p style='color:red;'>データの読み込みに失敗しました。</p>";
             }
         }
 
-        function updateSpotList() {
-            const spotListContainer = document.getElementById("spot-list");
-            spotListContainer.innerHTML = "";
-            
-            const bounds = map.getBounds();
-            let visibleCount = 0;
+        // --- イベントリスナー登録 ---
+        map.on('moveend', updateMapVisibleList);
+        
+        document.getElementById("sort-select").addEventListener('change', updateFullList);
+        
+        document.getElementById("filter-open").addEventListener('click', (e) => {
+            filterOpenOnly = !filterOpenOnly;
+            e.target.classList.toggle('active');
+            updateFullList();
+        });
 
-            allSpots.forEach((spot) => {
-                const spotLatLng = L.latLng(spot.latitude, spot.longitude);
-                
-                if (bounds.contains(spotLatLng)) {
-                    visibleCount++;
-                    const cardHtml = `
-                        <div class="spot-card">
-                            <div class="spot-placename">📍 ${spot.placename || "場所未設定"}</div>
-                            <h3 class="spot-title">${spot.name}</h3>
-                            <p class="spot-location">${spot.description || ""}</p>
-                            <div class="spot-time">🕒 使用可能時間: <b>${spot.available_hours || "不明"}</b></div>
-                        </div>
-                    `;
-                    spotListContainer.insertAdjacentHTML('beforeend', cardHtml);
-                }
-            });
-
-            if (visibleCount === 0) {
-                spotListContainer.innerHTML = "<p style='text-align:center; color:#666; margin-top: 20px;'>このエリアには給水スポットがありません💧<br>地図を動かして探してみてください。</p>";
-            }
-        }
-
-        map.on('moveend', updateSpotList);
-
-        loadSpots();
-
-        // --- GPS現在地取得と最短スポット検索処理 ---
-        const gpsBtn = document.getElementById('gps-btn');
-        let userMarker = null;
-
-        gpsBtn.addEventListener('click', () => {
+        // GPSボタン処理
+        document.getElementById('gps-btn').addEventListener('click', () => {
             if (!navigator.geolocation) {
                 alert("お使いのブラウザは現在地取得に対応していません。");
                 return;
             }
+            
+            const btn = document.getElementById('gps-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "⏳ 検索中...";
+            btn.disabled = true;
 
-            const originalText = gpsBtn.innerHTML;
-            gpsBtn.innerHTML = "⏳ 近くのスポットを検索中...";
-            gpsBtn.disabled = true;
+            navigator.geolocation.getCurrentPosition(pos => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                userLocation = [pos.coords.latitude, pos.coords.longitude];
+                L.marker(userLocation, {icon: L.divIcon({className: '', html: '<div class="user-location-marker"></div>'})}).addTo(map);
+                
+                let nearest = null; let minD = Infinity;
+                allSpots.forEach(s => {
+                    const d = L.latLng(userLocation).distanceTo(L.latLng(s.latitude, s.longitude));
+                    if (d < minD) { minD = d; nearest = s; }
+                });
+                
+                if (nearest) {
+                    map.setView([nearest.latitude, nearest.longitude], 18);
+                    setTimeout(() => nearest.marker.openPopup(), 300);
+                }
+                
+                // 現在地が取れたのでリストを再計算
+                updateFullList();
+                // もしセレクトボックスが「名前順」なら「距離順」に自動で切り替える
+                const sortSelect = document.getElementById("sort-select");
+                if(sortSelect.value === "default") {
+                    sortSelect.value = "distance";
+                    updateFullList();
+                }
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    gpsBtn.innerHTML = originalText;
-                    gpsBtn.disabled = false;
-
-                    // ユーザーの現在地ピンを立てる
-                    if (userMarker) {
-                        map.removeLayer(userMarker);
-                    }
-                    const userIcon = L.divIcon({
-                        className: '',
-                        html: '<div class="user-location-marker"></div>',
-                        iconSize: [22, 22],
-                        iconAnchor: [11, 11]
-                    });
-                    userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
-                    userMarker.bindPopup("<b>あなたの現在地</b>");
-
-                    // 一番近い給水スポットを探す
-                    if (allSpots.length > 0) {
-                        let nearestSpot = null;
-                        let minDistance = Infinity;
-                        const userLatLng = L.latLng(lat, lng);
-
-                        allSpots.forEach(spot => {
-                            const spotLatLng = L.latLng(spot.latitude, spot.longitude);
-                            const distance = userLatLng.distanceTo(spotLatLng);
-                            
-                            if (distance < minDistance) {
-                                minDistance = distance;
-                                nearestSpot = spot;
-                            }
-                        });
-
-                        if (nearestSpot) {
-                            // 一番近いスポットに地図を移動して、ポップアップを開く
-                            map.setView([nearestSpot.latitude, nearestSpot.longitude], 18);
-                            
-                            setTimeout(() => {
-                                nearestSpot.marker.openPopup();
-                            }, 300);
-                        }
-                    } else {
-                        map.setView([lat, lng], 17);
-                        userMarker.openPopup();
-                    }
-                },
-                (error) => {
-                    gpsBtn.innerHTML = originalText;
-                    gpsBtn.disabled = false;
-                    alert("現在地を取得できませんでした。スマホやブラウザの位置情報設定を確認してください。");
-                    console.error("GPSエラー:", error);
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
+            }, error => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                alert("現在地を取得できませんでした。設定を確認してください。");
+            }, { enableHighAccuracy: true });
         });
 
-        // --- タブ切り替え処理 ---
+        // タブ切り替え処理
         const navItems = document.querySelectorAll('.nav-item');
-        const viewSections = document.querySelectorAll('.view-section');
-
         navItems.forEach(item => {
             item.addEventListener('click', () => {
-                navItems.forEach(nav => nav.classList.remove('active'));
+                navItems.forEach(n => n.classList.remove('active'));
                 item.classList.add('active');
-
-                viewSections.forEach(section => section.classList.remove('active'));
-                const targetId = item.getAttribute('data-target');
-                document.getElementById(targetId).classList.add('active');
-
-                if (targetId === 'view-map') {
-                    setTimeout(() => {
-                        map.invalidateSize();
-                    }, 10);
-                }
+                document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+                document.getElementById(item.dataset.target).classList.add('active');
+                if (item.dataset.target === 'view-map') setTimeout(() => map.invalidateSize(), 10);
             });
         });
+
+        // アプリ起動時にデータ読み込み
+        loadSpots();
     </script>
 </body>
 </html>
