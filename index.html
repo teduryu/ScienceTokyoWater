@@ -416,7 +416,7 @@
 
         function getClosedDaysText(closedDaysArray) {
             if (!closedDaysArray || closedDaysArray.length === 0) return "";
-            const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+            const dayNames = ["日", "月", "火", "水", "木", "金", "土", "祝"];
             const closedNames = closedDaysArray.map(d => dayNames[d]);
             return ` <span style="color:var(--accent-red); font-weight:bold;">(休: ${closedNames.join(',')})</span>`;
         }
