@@ -2,328 +2,100 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ScienceTokyoWater</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
     <style>
-        /* =========================================
-           Science Tokyo デザインシステム準拠カラー
-           ========================================= */
         :root {
-            --science-blue: #1c3177;   
-            --science-sub: #7f96c2;    
-            --bg-color: #f2f4f9;       
-            --bg-darker: #e8eaf1;      
-            --accent-red: #f02b2b;     
-            --accent-green: #2b9e4a;   
-            
-            --card-bg: #FFFFFF;
-            --text-main: #222222;
-            --text-sub: #707070;       
+            --science-blue: #1c3177; --science-sub: #7f96c2; --bg-color: #f2f4f9;
+            --bg-darker: #e8eaf1; --accent-red: #f02b2b; --accent-green: #2b9e4a;
+            --card-bg: #FFFFFF; --text-main: #222222; --text-sub: #707070;
         }
 
         body {
-            font-family: 'Hind', 'Noto Sans JP', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding-top: 65px; 
-            padding-bottom: 90px;
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Hind', 'Noto Sans JP', sans-serif; margin: 0; padding: 0;
+            background-color: var(--bg-color); color: var(--text-main);
+            padding-top: 65px; padding-bottom: 90px; -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
         }
 
         header {
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            text-align: center;
-            padding: 16px 0;
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--science-blue);
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 2000;
-            box-shadow: 0 1px 0 rgba(28, 49, 119, 0.1); 
-            letter-spacing: 0.02em;
+            background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            text-align: center; padding: 16px 0; font-size: 1.25rem; font-weight: 700;
+            color: var(--science-blue); position: fixed; top: 0; left: 0; right: 0;
+            z-index: 2000; box-shadow: 0 1px 0 rgba(28, 49, 119, 0.1);
         }
 
         .container { padding: 20px; }
-
         .view-section { display: none; animation: fadeIn 0.3s ease; }
         .view-section.active { display: block; }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        #view-map.active {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            padding: 0;
-            z-index: 10;
-        }
+        #view-map.active { position: fixed; top: 0; left: 0; right: 0; bottom: 0; padding: 0; z-index: 10; }
+        #map { width: 100%; height: 100%; z-index: 1; }
 
-        #map {
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
+        .floating-ui-top { position: absolute; top: 85px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 90%; max-width: 400px; pointer-events: none; }
+        .floating-ui-bottom { position: absolute; bottom: 95px; left: 0; width: 100%; z-index: 1000; pointer-events: none; }
 
-        .leaflet-top { top: 75px !important; }
+        .horizontal-scroll-list { display: flex; gap: 15px; overflow-x: auto; padding: 10px 20px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .horizontal-scroll-list::-webkit-scrollbar { display: none; }
+        .horizontal-scroll-list .spot-card { pointer-events: auto; flex: 0 0 85%; scroll-snap-align: center; background-color: rgba(255, 255, 255, 0.98); box-shadow: 0 8px 24px rgba(28, 49, 119, 0.12); border: 1px solid var(--bg-darker); margin-bottom: 0; }
 
-        .floating-ui-top {
-            position: absolute;
-            top: 85px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            width: 90%;
-            max-width: 400px;
-            pointer-events: none;
-        }
+        .btn-large { pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--science-blue); color: white; border: none; padding: 14px; font-size: 1rem; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 16px rgba(28, 49, 119, 0.25); font-weight: 700; font-family: inherit; transition: all 0.2s; }
+        .btn-large:active { transform: scale(0.98); background: #15265b; }
+        .btn-secondary { background: var(--science-sub); box-shadow: 0 4px 10px rgba(127, 150, 194, 0.3); }
 
-        .floating-ui-bottom {
-            position: absolute;
-            bottom: 95px;
-            left: 0;
-            width: 100%;
-            z-index: 1000;
-            pointer-events: none;
-        }
+        .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(28, 49, 119, 0.04); position: relative; border: 1px solid var(--bg-darker); }
+        .add-map-container { position: relative; height: 220px; width: 100%; border-radius: 12px; overflow: hidden; border: 2px solid var(--science-sub); margin-bottom: 8px; }
+        .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); font-size: 2.5rem; z-index: 1000; pointer-events: none; text-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.1s; }
+        .center-pin.moving { transform: translate(-50%, -120%); }
 
-        .horizontal-scroll-list {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding: 10px 20px;
-            scroll-snap-type: x mandatory;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        .horizontal-scroll-list::-webkit-scrollbar {
-            display: none;
-        }
+        form label { display: block; margin-top: 14px; margin-bottom: 4px; font-size: 0.85rem; color: var(--science-blue); font-weight: 700; }
+        form input { width: 100%; padding: 12px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; }
+        .readonly-coords { background: var(--bg-color); color: var(--text-sub); text-align: center; border-color: var(--bg-darker); font-size: 0.8rem; }
 
-        .horizontal-scroll-list .spot-card {
-            pointer-events: auto;
-            flex: 0 0 85%;
-            scroll-snap-align: center;
-            margin-bottom: 0;
-            background-color: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 8px 24px rgba(28, 49, 119, 0.12);
-            border: 1px solid var(--bg-darker);
-        }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0 25px 0; box-shadow: 0 -1px 10px rgba(0,0,0,0.05); z-index: 2000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: var(--science-sub); width: 33%; cursor: pointer; }
+        .nav-item.active { color: var(--science-blue); font-weight: 700; }
+        .nav-item span:first-child { font-size: 1.4rem; margin-bottom: 2px; opacity: 0.5; transition: 0.2s; }
+        .nav-item.active span:first-child { opacity: 1; transform: translateY(-2px); }
 
-        .empty-message-pill {
-            pointer-events: auto;
-            background: rgba(255,255,255,0.98);
-            padding: 12px 24px;
-            border-radius: 30px;
-            margin: 0 auto;
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--text-sub);
-            box-shadow: 0 8px 20px rgba(28, 49, 119, 0.1);
-            border: 1px solid var(--bg-darker);
-        }
-
-        .btn-large {
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            background: var(--science-blue);
-            color: white;
-            border: none;
-            padding: 14px;
-            font-size: 1rem;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 6px 16px rgba(28, 49, 119, 0.25);
-            font-weight: 700;
-            transition: transform 0.2s ease, background 0.2s;
-            font-family: inherit;
-        }
-        .btn-large:active { 
-            transform: scale(0.98); 
-            background: #15265b;
-        }
-        
-        .btn-secondary {
-            background: var(--science-sub);
-            box-shadow: 0 4px 10px rgba(127, 150, 194, 0.3);
-        }
-        .btn-secondary:active { background: #687da8; }
-
-        .controls {
-            display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;
-        }
-        .control-item {
-            background: white; padding: 8px 15px; border-radius: 10px;
-            font-size: 0.85rem; border: 1px solid var(--science-sub); 
-            color: var(--science-blue); cursor: pointer;
-            font-family: inherit; font-weight: 500;
-        }
-        .control-item.active {
-            background: var(--science-blue); color: white; border-color: var(--science-blue);
-        }
-
-        .section-title {
-            font-size: 1.1rem; font-weight: 700; margin: 0 0 12px 0;
-            display: flex; justify-content: space-between; align-items: center;
-            color: var(--science-blue);
-        }
-
-        .spot-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 12px rgba(28, 49, 119, 0.04);
-            position: relative;
-            border: 1px solid var(--bg-darker);
-        }
-
-        /* フォームのスタイル */
-        form label {
-            display: block;
-            margin-top: 16px;
-            margin-bottom: 6px;
-            font-size: 0.9rem;
-            color: var(--science-blue);
-            font-weight: 700;
-        }
-        form input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--science-sub);
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 1rem;
-            box-sizing: border-box;
-            color: var(--text-main);
-            background-color: white;
-        }
-        form input[readonly] {
-            background-color: var(--bg-color);
-            color: var(--text-sub);
-            border-color: var(--bg-darker);
-        }
-        form input:focus {
-            outline: none;
-            border-color: var(--science-blue);
-            box-shadow: 0 0 0 2px rgba(28, 49, 119, 0.1);
-        }
-
-        .status-badge {
-            position: absolute; top: 16px; right: 16px;
-            padding: 4px 8px; border-radius: 4px;
-            font-size: 0.7rem; font-weight: 700;
-        }
+        .user-location-marker { background: var(--accent-red); width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.3); }
+        .status-badge { position: absolute; top: 16px; right: 16px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
         .status-open { background: #eef7f0; color: var(--accent-green); }
         .status-closed { background: #fdf0f0; color: var(--accent-red); }
-
-        .spot-placename { font-size: 0.8rem; color: var(--science-sub); font-weight: 700; }
-        .spot-title { font-size: 1.05rem; font-weight: 700; margin: 6px 0; color: var(--text-main); }
-        .spot-distance { font-size: 0.85rem; color: var(--text-sub); line-height: 1.6; }
-
-        .bottom-nav {
-            position: fixed; bottom: 0; width: 100%;
-            background-color: rgba(255, 255, 255, 0.98);
-            display: flex; justify-content: space-around;
-            padding: 12px 0 24px 0;
-            box-shadow: 0 -1px 0 rgba(28, 49, 119, 0.08);
-            z-index: 2000;
-        }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            font-size: 0.7rem; color: var(--science-sub); width: 33%; cursor: pointer;
-            transition: color 0.2s;
-        }
-        .nav-item span:first-child { font-size: 1.4rem; margin-bottom: 4px; filter: grayscale(100%) opacity(50%); transition: all 0.2s; }
-        .nav-item.active { color: var(--science-blue); font-weight: 700; }
-        .nav-item.active span:first-child { filter: grayscale(0%) opacity(100%); transform: translateY(-2px); }
-
-        .user-location-marker {
-            background-color: var(--accent-red); 
-            width: 16px; height: 16px;
-            border-radius: 50%; border: 3px solid white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
-        }
-        
-        .leaflet-popup-content-wrapper {
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(28, 49, 119, 0.15);
-        }
     </style>
 </head>
 <body>
 
     <header>💧 ScienceTokyoWater</header>
 
-    <div id="view-map" class="view-section active">
-        <div id="map"></div>
-        <div class="floating-ui-top">
-            <button id="gps-btn" class="btn-large">📍 近くのスポットを自動検索</button>
-        </div>
-        <div class="floating-ui-bottom">
-            <div id="map-visible-list" class="horizontal-scroll-list"></div>
-        </div>
-    </div>
+    <div id="view-map" class="view-section active"><div id="map"></div><div class="floating-ui-top"><button id="gps-btn" class="btn-large">📍 近くを検索</button></div><div class="floating-ui-bottom"><div id="map-visible-list" class="horizontal-scroll-list"></div></div></div>
 
     <div class="container">
         <div id="view-list" class="view-section">
             <h2 class="section-title">スポット一覧</h2>
-            <div class="controls">
-                <select id="sort-select" class="control-item">
-                    <option value="default">名前順</option>
-                    <option value="distance">現在地に近い順</option>
-                </select>
-                <div id="filter-open" class="control-item">🟢 営業中のみ</div>
-            </div>
-            <div id="full-spot-list">
-                <p style="text-align: center; color: var(--text-sub); font-size: 0.9rem;">データを読み込み中...</p>
-            </div>
+            <div id="full-spot-list"></div>
         </div>
 
         <div id="view-add" class="view-section">
-            <h2 class="section-title">新規スポットの追加</h2>
-            <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 15px;">
-                まだマップに載っていない給水スポットを見つけたら、ぜひ登録して共有してください！
-            </p>
-            
+            <h2 class="section-title">新規追加</h2>
             <div class="spot-card">
                 <form id="add-spot-form">
-                    <label>スポット名 (必須)</label>
-                    <input type="text" id="add-name" required placeholder="例: 1階 ウォーターサーバー">
-
-                    <label>建物・エリア名 (必須)</label>
-                    <input type="text" id="add-placename" required placeholder="例: 本館">
-
-                    <label>位置情報 (必須)</label>
-                    <div style="display:flex; gap:10px;">
-                        <input type="number" id="add-lat" step="0.000001" required placeholder="緯度" readonly>
-                        <input type="number" id="add-lng" step="0.000001" required placeholder="経度" readonly>
-                    </div>
-                    <button type="button" id="btn-get-location" class="btn-large btn-secondary" style="margin-top:10px; padding: 10px; font-size: 0.9rem;">
-                        📍 現在地を取得して自動入力
-                    </button>
-
-                    <label>利用可能時間</label>
-                    <input type="text" id="add-hours" placeholder="例: 09:00 - 18:00 (空白は24時間扱い)">
-
-                    <button type="submit" class="btn-large" style="margin-top:25px;">➕ このスポットを登録する</button>
+                    <label>スポット名</label><input type="text" id="add-name" required placeholder="例: 2F 休憩スペース">
+                    <label>建物名</label><input type="text" id="add-placename" required placeholder="例: 西5号館">
+                    <label>場所の指定 (地図をスワイプ)</label>
+                    <div class="add-map-container"><div id="add-map" style="width:100%;height:100%;"></div><div id="center-pin" class="center-pin">📍</div></div>
+                    <div style="display:flex; gap:5px;"><input type="number" id="add-lat" step="0.000001" readonly class="readonly-coords"><input type="number" id="add-lng" step="0.000001" readonly class="readonly-coords"></div>
+                    <button type="button" id="btn-get-location" class="btn-large btn-secondary" style="margin-top:8px;">🎯 現在地に合わせる</button>
+                    <label>利用時間</label><input type="text" id="add-hours" placeholder="例: 09:00 - 18:00">
+                    <button type="submit" id="submit-btn" class="btn-large" style="margin-top:20px;">➕ この内容で登録する</button>
                 </form>
             </div>
         </div>
@@ -338,8 +110,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        // ★ Firestoreから addDoc をインポート
-        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg",
@@ -353,238 +124,137 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // --- 地図初期化 ---
         const map = L.map('map').setView([35.6061, 139.6833], 16);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
+        let addMap = null;
         let allSpots = [];
-        let userLocation = null;
-        let filterOpenOnly = false;
+        let userMarker = null;
+        let isFormDirty = false;
 
-        function isOpen(spot) {
-            const hoursStr = spot.available_hours;
-            const closedDays = spot.closed_days || [];
-            const now = new Date();
-            const currentDay = now.getDay(); 
-            
-            if (closedDays.includes(currentDay)) return false;
-            if (!hoursStr || hoursStr === "24時間" || hoursStr === "不明") return true;
-            try {
-                const currentTime = now.getHours() * 60 + now.getMinutes();
-                const [start, end] = hoursStr.split('-').map(t => {
-                    const [h, m] = t.trim().split(':').map(Number);
-                    return h * 60 + m;
-                });
-                return currentTime >= start && currentTime <= end;
-            } catch { return true; }
-        }
+        // --- フォーム離脱防止 ---
+        window.onbeforeunload = () => isFormDirty ? "入力内容が破棄されますがよろしいですか？" : null;
+        document.getElementById('add-spot-form').addEventListener('input', () => isFormDirty = true);
 
         function getClosedDaysText(closedDaysArray) {
             if (!closedDaysArray || closedDaysArray.length === 0) return "";
             const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
-            const closedNames = closedDaysArray.map(d => dayNames[d]);
-            return ` <span style="color:var(--accent-red); font-weight:bold;">(休: ${closedNames.join(',')})</span>`;
+            return ` <span style="color:var(--accent-red); font-weight:bold;">(休: ${closedDaysArray.map(d => dayNames[d]).join(',')})</span>`;
         }
 
         function createCard(spot) {
-            const openStatus = isOpen(spot); 
-            const distText = spot.distance ? `📏 約${Math.round(spot.distance)}m<br>` : "";
-            const closedText = getClosedDaysText(spot.closed_days);
-            
-            return `
-                <div class="spot-card">
-                    <span class="status-badge ${openStatus ? 'status-open' : 'status-closed'}">
-                        ${openStatus ? '営業中' : '時間外'}
-                    </span>
-                    <div class="spot-placename">📍 ${spot.placename || "場所未設定"}</div>
-                    <div class="spot-title">${spot.name}</div>
-                    <div class="spot-distance">${distText}🕒 ${spot.available_hours || "不明"}${closedText}</div>
-                </div>
-            `;
+            return `<div class="spot-card"><div class="spot-placename">📍 ${spot.placename}</div><div class="spot-title">${spot.name}</div><div class="spot-distance">🕒 ${spot.available_hours || "24時間"}</div></div>`;
         }
 
         function updateMapVisibleList() {
             const container = document.getElementById("map-visible-list");
             const bounds = map.getBounds();
-            const visibleSpots = allSpots.filter(s => bounds.contains(L.latLng(s.latitude, s.longitude)));
-            
-            if (visibleSpots.length > 0) {
-                container.innerHTML = visibleSpots.map(createCard).join('');
-            } else {
-                container.innerHTML = `<div class="empty-message-pill">このエリアには給水スポットがありません💧</div>`;
-            }
+            const visible = allSpots.filter(s => bounds.contains(L.latLng(s.latitude, s.longitude)));
+            container.innerHTML = visible.length > 0 ? visible.map(createCard).join('') : `<div class="empty-message-pill">近くにスポットはありません💧</div>`;
         }
 
-        function updateFullList() {
-            const container = document.getElementById("full-spot-list");
-            const sortBy = document.getElementById("sort-select").value;
-            let displaySpots = [...allSpots];
-
-            if (userLocation) {
-                displaySpots.forEach(s => {
-                    s.distance = L.latLng(userLocation).distanceTo(L.latLng(s.latitude, s.longitude));
-                });
-            }
-
-            if (filterOpenOnly) displaySpots = displaySpots.filter(s => isOpen(s));
-
-            if (sortBy === "distance" && userLocation) {
-                displaySpots.sort((a, b) => a.distance - b.distance);
-            } else {
-                displaySpots.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-            }
-
-            container.innerHTML = displaySpots.map(createCard).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません💧</p>";
+        function addMarker(spot) {
+            const marker = L.marker([spot.latitude, spot.longitude]).addTo(map);
+            marker.bindPopup(`<b>${spot.name}</b><br>${spot.placename}<br>${spot.available_hours}`);
+            spot.marker = marker;
+            allSpots.push(spot);
         }
 
         async function loadSpots() {
-            try {
-                const querySnapshot = await getDocs(collection(db, "spots"));
-                allSpots = []; // リセット
-                querySnapshot.forEach(doc => {
-                    const spot = doc.data();
-                    if (spot.latitude && spot.longitude) {
-                        const marker = L.marker([spot.latitude, spot.longitude]).addTo(map);
-                        const closedText = getClosedDaysText(spot.closed_days);
-                        marker.bindPopup(`
-                            <div style="font-size:0.85em; color:var(--science-sub); margin-bottom:2px; font-family: 'Hind', 'Noto Sans JP', sans-serif;">📍 ${spot.placename || "場所未設定"}</div>
-                            <b style="font-size:1.1em; color:var(--science-blue); font-family: 'Hind', 'Noto Sans JP', sans-serif;">${spot.name}</b><br>
-                            <div style="margin-top:6px; color:var(--text-main); font-family: 'Hind', 'Noto Sans JP', sans-serif;">🕒 ${spot.available_hours || "不明"}${closedText}</div>
-                        `);
-                        spot.marker = marker;
-                        allSpots.push(spot);
-                    }
-                });
-                updateMapVisibleList();
-                updateFullList();
-            } catch (error) {
-                console.error("データの読み込みに失敗:", error);
-            }
+            const snap = await getDocs(collection(db, "spots"));
+            snap.forEach(doc => addMarker(doc.data()));
+            updateMapVisibleList();
+            document.getElementById("full-spot-list").innerHTML = allSpots.map(createCard).join('');
         }
 
         map.on('moveend', updateMapVisibleList);
-        document.getElementById("sort-select").addEventListener('change', updateFullList);
-        document.getElementById("filter-open").addEventListener('click', (e) => {
-            filterOpenOnly = !filterOpenOnly;
-            e.target.classList.toggle('active');
-            updateFullList();
-        });
 
-        // 検索ボタン (マップ画面)
-        document.getElementById('gps-btn').addEventListener('click', () => {
-            if (!navigator.geolocation) return alert("現在地取得に対応していません。");
-            const btn = document.getElementById('gps-btn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ 検索中...";
-            btn.disabled = true;
-
-            navigator.geolocation.getCurrentPosition(pos => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                userLocation = [pos.coords.latitude, pos.coords.longitude];
-                L.marker(userLocation, {icon: L.divIcon({className: '', html: '<div class="user-location-marker"></div>'})}).addTo(map);
-                
-                let nearest = null; let minD = Infinity;
-                allSpots.forEach(s => {
-                    const d = L.latLng(userLocation).distanceTo(L.latLng(s.latitude, s.longitude));
-                    if (d < minD) { minD = d; nearest = s; }
+        // --- GPS取得 (高精度・タイムアウト設定) ---
+        function getGPS() {
+            return new Promise((res, rej) => {
+                navigator.geolocation.getCurrentPosition(res, rej, { 
+                    enableHighAccuracy: true, timeout: 10000, maximumAge: 0 
                 });
-                if (nearest) {
-                    map.setView([nearest.latitude, nearest.longitude], 18);
-                    setTimeout(() => nearest.marker.openPopup(), 300);
-                }
-                updateFullList();
-                const sortSelect = document.getElementById("sort-select");
-                if(sortSelect.value === "default") {
-                    sortSelect.value = "distance";
-                    updateFullList();
-                }
-            }, err => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                alert("現在地を取得できませんでした。");
-            }, { enableHighAccuracy: true });
+            });
+        }
+
+        document.getElementById('gps-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('gps-btn');
+            btn.innerText = "⏳ 測位中...";
+            try {
+                const pos = await getGPS();
+                const loc = [pos.coords.latitude, pos.coords.longitude];
+                if (userMarker) map.removeLayer(userMarker);
+                userMarker = L.marker(loc, {icon: L.divIcon({className:'', html:'<div class="user-location-marker"></div>'})}).addTo(map);
+                map.setView(loc, 17);
+            } catch (e) { alert("位置情報を取得できませんでした。設定を確認してください。"); }
+            btn.innerText = "📍 近くを検索";
         });
 
-        // ==========================================
-        // ★ 新規スポット追加機能のロジック
-        // ==========================================
-        
-        // 1. 位置情報の取得ボタン
-        document.getElementById('btn-get-location').addEventListener('click', () => {
-            if (!navigator.geolocation) return alert("お使いのブラウザは現在地取得に対応していません。");
-            
-            const btn = document.getElementById('btn-get-location');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ 取得中...";
-            btn.disabled = true;
+        // --- 追加用マップ初期化 ---
+        function initAddMap() {
+            if (addMap) return;
+            addMap = L.map('add-map', { zoomControl: false }).setView([35.6061, 139.6833], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(addMap);
+            const pin = document.getElementById('center-pin');
+            addMap.on('movestart', () => pin.classList.add('moving'));
+            addMap.on('move', () => {
+                const c = addMap.getCenter();
+                document.getElementById('add-lat').value = c.lat.toFixed(6);
+                document.getElementById('add-lng').value = c.lng.toFixed(6);
+            });
+            addMap.on('moveend', () => pin.classList.remove('moving'));
+        }
 
-            navigator.geolocation.getCurrentPosition(pos => {
-                document.getElementById('add-lat').value = pos.coords.latitude.toFixed(6);
-                document.getElementById('add-lng').value = pos.coords.longitude.toFixed(6);
-                btn.innerHTML = "✅ 取得完了！";
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }, 2000);
-            }, err => {
-                alert("位置情報を取得できませんでした。スマホの設定で許可されているか確認してください。");
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }, { enableHighAccuracy: true });
+        document.getElementById('btn-get-location').addEventListener('click', async () => {
+            try {
+                const pos = await getGPS();
+                addMap.setView([pos.coords.latitude, pos.coords.longitude], 18);
+            } catch (e) { alert("GPS失敗。手動で地図を動かしてください。"); }
         });
 
-        // 2. フォーム送信処理 (Firebaseへ保存)
+        // --- フォーム送信 (リロードなし反映) ---
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); // 画面リロードを防ぐ
-            
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "⏳ 登録中...";
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true; btn.innerText = "送信中...";
 
-            // フォームからデータを取得
             const newSpot = {
                 name: document.getElementById('add-name').value,
                 placename: document.getElementById('add-placename').value,
                 latitude: parseFloat(document.getElementById('add-lat').value),
                 longitude: parseFloat(document.getElementById('add-lng').value),
-                available_hours: document.getElementById('add-hours').value || "不明",
-                closed_days: [] // 初期値として空配列
+                available_hours: document.getElementById('add-hours').value || "24時間",
+                created_at: serverTimestamp()
             };
 
             try {
-                // Firestoreの "spots" コレクションにデータを追加
                 await addDoc(collection(db, "spots"), newSpot);
-                
-                alert("新しい給水スポットを登録しました！ご協力ありがとうございます✨");
-                
-                // フォームをリセット
+                isFormDirty = false;
+                addMarker(newSpot); // 即座に地図へ追加
+                alert("登録完了！");
                 e.target.reset();
-                
-                // マップに即座に反映させるために再読み込みを実行
-                // 既存のマーカーを消す処理が必要なので、ページごとリロードするのが最も確実です。
-                window.location.reload();
-
-            } catch (error) {
-                console.error("エラー:", error);
-                alert("登録に失敗しました。時間をおいて再度お試しください。");
-                submitBtn.disabled = false;
-                submitBtn.innerText = "➕ このスポットを登録する";
-            }
+                document.querySelector('[data-target="view-map"]').click(); // マップへ移動
+                map.setView([newSpot.latitude, newSpot.longitude], 18);
+            } catch (err) { alert("エラーが発生しました。"); }
+            btn.disabled = false; btn.innerText = "➕ この内容で登録する";
         });
 
-        // タブ切り替え
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
+        // --- タブ切り替え ---
+        document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
-                navItems.forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.nav-item, .view-section').forEach(el => el.classList.remove('active'));
                 item.classList.add('active');
-                document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-                const targetId = item.dataset.target;
-                document.getElementById(targetId).classList.add('active');
-                if (targetId === 'view-map') setTimeout(() => map.invalidateSize(), 10);
+                const target = document.getElementById(item.dataset.target);
+                target.classList.add('active');
+                
+                // 地図の表示崩れ防止 (重要)
+                if (item.dataset.target === 'view-map') setTimeout(() => map.invalidateSize(), 100);
+                if (item.dataset.target === 'view-add') {
+                    initAddMap();
+                    setTimeout(() => addMap.invalidateSize(), 100);
+                }
             });
         });
 
