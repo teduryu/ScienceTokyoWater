@@ -27,6 +27,7 @@
             background-color: var(--bg-color); color: var(--text-main);
             padding-top: 65px; padding-bottom: 90px; -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent; /* タップ時の青い枠を消す */
         }
 
         header {
@@ -38,7 +39,7 @@
 
         .container { padding: 20px; }
         .view-section { display: none; animation: fadeIn 0.3s ease; }
-        .view-section.active { display: block; height: 100%; }
+        .view-section.active { display: block; height: 100%; min-height: calc(100vh - 155px); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         /* --- マップ画面 --- */
@@ -71,7 +72,7 @@
         .btn-secondary { background: var(--science-sub); box-shadow: 0 4px 10px rgba(127, 150, 194, 0.3); }
 
         .controls { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .control-item { background: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 500; }
+        .control-item { background: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.2s; }
         .control-item.active { background: var(--science-blue); color: white; border-color: var(--science-blue); }
 
         .section-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; color: var(--science-blue); }
@@ -97,7 +98,16 @@
         .center-pin.moving { transform: translate(-50%, -120%); }
 
         /* --- 詳細ページ --- */
-        .detail-image { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 15px; background-color: var(--bg-darker); }
+        /* ★ 画像のトリミングを修正 (containに変更し背景色を設定) */
+        .detail-image { 
+            width: 100%; 
+            height: 250px; 
+            object-fit: contain; 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            background-color: var(--bg-color); 
+            border: 1px solid var(--bg-darker);
+        }
         .detail-back-btn { background: none; border: none; color: var(--science-blue); font-size: 1.1rem; font-weight: bold; padding: 10px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0 25px 0; box-shadow: 0 -1px 10px rgba(0,0,0,0.05); z-index: 2000; }
@@ -110,8 +120,8 @@
         .status-badge { position: absolute; top: 16px; right: 16px; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
         .status-open { background: #eef7f0; color: var(--accent-green); }
         .status-closed { background: #fdf0f0; color: var(--accent-red); }
-        .spot-placename { font-size: 0.8rem; color: var(--science-sub); font-weight: 700; }
-        .spot-title { font-size: 1.05rem; font-weight: 700; margin: 4px 0; color: var(--text-main); }
+        .spot-placename { font-size: 0.8rem; color: var(--science-sub); font-weight: 700; line-height: 1.2; }
+        .spot-title { font-size: 1.05rem; font-weight: 700; margin: 4px 0 8px 0; color: var(--text-main); line-height: 1.3; }
         .spot-distance { font-size: 0.85rem; color: var(--text-sub); line-height: 1.6; }
     </style>
 </head>
@@ -136,6 +146,10 @@
 
     <div class="container view-section" id="view-add">
         <h2 class="section-title">新規スポットの追加</h2>
+        <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 15px;">
+            まだマップに載っていない給水スポットを見つけたら、ぜひ登録して共有してください！
+        </p>
+        
         <div class="spot-card">
             <form id="add-spot-form">
                 <label>スポット名 (必須)</label>
@@ -164,7 +178,7 @@
                 </div>
 
                 <label>利用可能時間</label>
-                <input type="text" id="add-hours" placeholder="例: 09:00 - 18:00 (空白は24時間)">
+                <input type="text" id="add-hours" placeholder="例: 09:00 - 18:00 (空白は24時間営業)">
 
                 <label>休業日</label>
                 <div class="days-grid">
@@ -227,7 +241,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app); // Storageを初期化
+        const storage = getStorage(app);
 
         // ==========================================
         // ★ Mapboxのアクセストークンを以下に入力してください
@@ -252,6 +266,15 @@
         window.onbeforeunload = () => isFormDirty ? "入力内容が破棄されますがよろしいですか？" : null;
         document.getElementById('add-spot-form').addEventListener('input', () => isFormDirty = true);
 
+        // --- ★ XSS脆弱性対策用エスケープ関数 ---
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/[&<>'"]/g, match => {
+                const escape = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+                return escape[match];
+            });
+        }
+
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3; const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180;
             const dp = (lat2-lat1) * Math.PI/180; const dl = (lon2-lon1) * Math.PI/180;
@@ -262,13 +285,19 @@
         function formatDistance(meters) { return meters < 1000 ? `約${Math.round(meters)}m` : `約${(meters / 1000).toFixed(1)}km`; }
 
         function isOpen(spot) {
-            const hoursStr = spot.available_hours;
+            const hoursStr = spot.available_hours || "24時間営業";
             const currentDay = new Date().getDay(); 
             if ((spot.closed_days || []).includes(currentDay)) return false;
-            if (!hoursStr || hoursStr === "24時間" || hoursStr === "不明") return true;
+            if (hoursStr.includes("24時間") || hoursStr === "不明") return true;
             try {
                 const ct = new Date().getHours() * 60 + new Date().getMinutes();
-                const [start, end] = hoursStr.split('-').map(t => { const [h, m] = t.trim().split(':').map(Number); return h * 60 + m; });
+                const parts = hoursStr.split('-');
+                if(parts.length !== 2) return true;
+                const startParts = parts[0].trim().split(':').map(Number);
+                const endParts = parts[1].trim().split(':').map(Number);
+                if(startParts.length !== 2 || endParts.length !== 2) return true;
+                const start = startParts[0] * 60 + startParts[1];
+                const end = endParts[0] * 60 + endParts[1];
                 return ct >= start && ct <= end;
             } catch { return true; }
         }
@@ -279,23 +308,30 @@
             return ` <span style="color:var(--accent-red); font-weight:bold;">(休: ${closed.map(d => dayNames[d]).join(',')})</span>`;
         }
 
-        // --- ★ グローバル関数の登録 (HTMLから呼び出すため) ---
+        // --- グローバル関数の登録 ---
         window.flyToSpot = function(id) {
             const spot = allSpots.find(s => s.id === id);
             if (!spot) return;
-            document.querySelector('[data-target="view-map"]').click(); // マップへ移動
+            document.querySelector('[data-target="view-map"]').click();
             map.flyTo({ center: [spot.longitude, spot.latitude], zoom: 18, speed: 1.5 });
             setTimeout(() => { if (!spot.marker.getPopup().isOpen()) spot.marker.togglePopup(); }, 800);
         }
 
         window.showDetail = function(id) {
+            // 現在のビューを記憶（詳細ページ自身の場合は上書きしない）
+            const activeView = document.querySelector('.view-section.active');
+            if (activeView && activeView.id !== 'view-detail') {
+                previousView = activeView.id;
+            }
+
             currentDetailSpotId = id;
             const spot = allSpots.find(s => s.id === id);
             if (!spot) return;
             
+            // 安全にエスケープして挿入
             document.getElementById('detail-title').innerText = spot.name;
-            document.getElementById('detail-placename').innerText = "📍 " + spot.placename;
-            document.getElementById('detail-hours').innerText = "🕒 " + (spot.available_hours || "不明");
+            document.getElementById('detail-placename').innerText = "📍 " + (spot.placename || "場所未設定");
+            document.getElementById('detail-hours').innerText = "🕒 " + (spot.available_hours || "24時間営業");
             document.getElementById('detail-closed').innerHTML = getClosedDaysText(spot.closed_days);
             
             const imgEl = document.getElementById('detail-image');
@@ -303,7 +339,7 @@
             else { imgEl.style.display = 'none'; }
             
             const featuresEl = document.getElementById('detail-features');
-            featuresEl.innerHTML = (spot.features || []).map(f => `<span class="feature-badge">${f}</span>`).join('');
+            featuresEl.innerHTML = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
             
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             document.getElementById('view-detail').classList.add('active');
@@ -313,21 +349,22 @@
         window.goBack = function() { document.querySelector(`[data-target="${previousView}"]`).click(); }
         window.flyToSpotFromDetail = function() { if (currentDetailSpotId) flyToSpot(currentDetailSpotId); }
 
-        function createCard(spot) {
+        // --- ★ リストとマップでタップ時の動作を分けるように変更 ---
+        function createCard(spot, onClickAction) {
             const openStatus = isOpen(spot);
             const distText = spot.distance ? `📏 ${formatDistance(spot.distance)}<br>` : "";
             const closedText = getClosedDaysText(spot.closed_days);
-            const featuresHtml = (spot.features || []).map(f => `<span class="feature-badge">${f}</span>`).join('');
+            const featuresHtml = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
             const imgIcon = spot.imageUrl ? ` <span style="font-size:0.8rem;">📸</span>` : '';
+            const safeHours = escapeHTML(spot.available_hours) || "24時間営業"; // ★ 空欄のデフォルト表示修正
 
-            // ★ カード全体をクリック可能に
             return `
-                <div class="spot-card clickable-card" onclick="flyToSpot('${spot.id}')">
+                <div class="spot-card clickable-card" onclick="${onClickAction}('${spot.id}')">
                     <span class="status-badge ${openStatus ? 'status-open' : 'status-closed'}">${openStatus ? '営業中' : '時間外'}</span>
-                    <div class="spot-placename">📍 ${spot.placename || "場所未設定"}</div>
-                    <div class="spot-title">${spot.name}${imgIcon}</div>
+                    <div class="spot-placename">📍 ${escapeHTML(spot.placename) || "場所未設定"}</div>
+                    <div class="spot-title">${escapeHTML(spot.name)}${imgIcon}</div>
                     <div style="margin-bottom: 8px;">${featuresHtml}</div>
-                    <div class="spot-distance">${distText}🕒 ${spot.available_hours || "不明"}${closedText}</div>
+                    <div class="spot-distance">${distText}🕒 ${safeHours}${closedText}</div>
                 </div>
             `;
         }
@@ -336,7 +373,8 @@
             const container = document.getElementById("map-visible-list");
             const bounds = map.getBounds();
             const visibleSpots = allSpots.filter(s => bounds.contains([s.longitude, s.latitude]));
-            container.innerHTML = visibleSpots.length > 0 ? visibleSpots.map(createCard).join('') : `<div class="empty-message-pill">このエリアには給水スポットがありません💧</div>`;
+            // ★ マップ下部のリストはタップでマップ上のフォーカス（flyToSpot）
+            container.innerHTML = visibleSpots.length > 0 ? visibleSpots.map(s => createCard(s, 'flyToSpot')).join('') : `<div class="empty-message-pill">このエリアには給水スポットがありません💧</div>`;
         }
 
         function updateFullList() {
@@ -347,15 +385,19 @@
             if (filterOpenOnly) displaySpots = displaySpots.filter(s => isOpen(s));
             if (sortBy === "distance" && userLocation) { displaySpots.sort((a, b) => a.distance - b.distance); }
             else { displaySpots.sort((a, b) => a.name.localeCompare(b.name, 'ja')); }
-            container.innerHTML = displaySpots.map(createCard).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません💧</p>";
+            // ★ リスト画面からはタップで直接詳細ページへ（showDetail）
+            container.innerHTML = displaySpots.map(s => createCard(s, 'showDetail')).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません💧</p>";
         }
 
         function addMarker(spot) {
-            // ★ ポップアップに「詳細を見る」ボタンを追加
+            const safePlacename = escapeHTML(spot.placename) || "場所未設定";
+            const safeName = escapeHTML(spot.name);
+            const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
+            
             const popupHtml = `
-                <div style="font-size:0.85em; color:var(--science-sub); margin-bottom:2px;">📍 ${spot.placename || "場所未設定"}</div>
-                <b style="font-size:1.1em; color:var(--science-blue);">${spot.name}</b><br>
-                <div style="margin-top:6px; margin-bottom: 12px;">🕒 ${spot.available_hours || "不明"}${getClosedDaysText(spot.closed_days)}</div>
+                <div style="font-size:0.85em; color:var(--science-sub); margin-bottom:2px;">📍 ${safePlacename}</div>
+                <b style="font-size:1.1em; color:var(--science-blue);">${safeName}</b><br>
+                <div style="margin-top:6px; margin-bottom: 12px;">🕒 ${safeHours}${getClosedDaysText(spot.closed_days)}</div>
                 <button onclick="showDetail('${spot.id}')" style="width:100%; padding:8px; border:none; background:var(--bg-darker); color:var(--science-blue); border-radius:6px; font-weight:bold; cursor:pointer;">詳細を見る ＞</button>
             `;
             const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml);
@@ -370,7 +412,7 @@
                 allSpots = []; 
                 querySnapshot.forEach(doc => {
                     const spot = doc.data();
-                    spot.id = doc.id; // ★ ドキュメントIDを保持
+                    spot.id = doc.id; 
                     if (spot.latitude && spot.longitude) { addMarker(spot); }
                 });
                 updateMapVisibleList();
@@ -422,14 +464,12 @@
             catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
         });
 
-        // --- ★ フォーム送信 (画像アップロード対応) ---
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
             submitBtn.innerText = "⏳ 処理中...";
 
-            // 1. 画像が選択されていればStorageにアップロード
             const fileInput = document.getElementById('add-image');
             let uploadedImageUrl = "";
             
@@ -447,7 +487,6 @@
             }
             submitBtn.innerText = "⏳ データ登録中...";
 
-            // 2. 特徴や休業日のデータを配列で取得
             const closedDaysArray = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
             const featuresArray = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
 
@@ -456,7 +495,7 @@
                 placename: document.getElementById('add-placename').value, 
                 latitude: parseFloat(document.getElementById('add-lat').value), 
                 longitude: parseFloat(document.getElementById('add-lng').value), 
-                available_hours: document.getElementById('add-hours').value || "不明", 
+                available_hours: document.getElementById('add-hours').value || "24時間営業", // ★デフォルト値変更
                 closed_days: closedDaysArray,
                 features: featuresArray,
                 imageUrl: uploadedImageUrl,
@@ -465,7 +504,7 @@
 
             try { 
                 const docRef = await addDoc(collection(db, "spots"), newSpot); 
-                newSpot.id = docRef.id; // 発行されたIDをセット
+                newSpot.id = docRef.id; 
                 
                 isFormDirty = false;
                 addMarker(newSpot); 
@@ -493,7 +532,11 @@
                 document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
                 
                 const targetId = item.dataset.target;
-                previousView = targetId; // 戻るボタン用に記録
+                
+                // 詳細ページ以外を開いたときは履歴(previousView)を更新
+                if (targetId !== 'view-detail') {
+                    previousView = targetId;
+                }
                 
                 document.getElementById(targetId).classList.add('active');
                 if (targetId === 'view-map') setTimeout(() => map.resize(), 100);
