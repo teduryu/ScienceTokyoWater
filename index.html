@@ -45,23 +45,22 @@
             padding: 20px;
         }
 
-        /* --- 新規追加：画面切り替え用のスタイル --- */
+        /* 画面切り替え用のスタイル */
         .view-section {
-            display: none; /* 基本は非表示 */
-            animation: fadeIn 0.3s ease; /* ふわっと表示させるアニメーション */
+            display: none;
+            animation: fadeIn 0.3s ease;
         }
         .view-section.active {
-            display: block; /* activeクラスがついた画面だけ表示 */
+            display: block;
         }
         
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* -------------------------------------- */
 
         #map {
-            height: 400px; /* マップ画面だけになったので少し大きくしました */
+            height: 400px;
             width: 100%;
             border-radius: 20px;
             margin-bottom: 24px;
@@ -171,7 +170,7 @@
             color: var(--text-sub);
             font-weight: 500;
             cursor: pointer;
-            width: 33%; /* タップしやすいように幅を広げる */
+            width: 33%;
         }
 
         .nav-icon {
@@ -184,7 +183,7 @@
         }
         .nav-item.active .nav-icon {
             filter: grayscale(0) drop-shadow(0 2px 4px rgba(59, 130, 246, 0.4));
-            transform: translateY(-2px) scale(1.1); /* 選択されたアイコンを少し大きくする */
+            transform: translateY(-2px) scale(1.1);
         }
 
         .user-location-marker {
@@ -261,7 +260,7 @@
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
-        // --- 地図とデータの初期化 ---
+        // --- 地図の初期化 ---
         const campusLocation = [35.6061, 139.6833];
         const map = L.map('map').setView(campusLocation, 16);
         
@@ -270,11 +269,11 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
+        let allSpots = []; 
+
         async function loadSpots() {
             try {
                 const querySnapshot = await getDocs(collection(db, "spots"));
-                const spotListContainer = document.getElementById("spot-list");
-                spotListContainer.innerHTML = "";
                 
                 querySnapshot.forEach((doc) => {
                     const spot = doc.data();
@@ -288,8 +287,33 @@
                             <div style="margin-top:6px;">🕒 使用可能時間: <b>${spot.available_hours || "不明"}</b></div>
                         `;
                         marker.bindPopup(popupContent);
+                        
+                        // ポップアップを開けるようにマーカー情報を保存
+                        spot.marker = marker;
+                        allSpots.push(spot);
                     }
+                });
 
+                updateSpotList();
+
+            } catch (error) {
+                console.error("データの取得に失敗しました: ", error);
+                document.getElementById("spot-list").innerHTML = "<p style='text-align:center; color:red;'>データの読み込みに失敗しました。</p>";
+            }
+        }
+
+        function updateSpotList() {
+            const spotListContainer = document.getElementById("spot-list");
+            spotListContainer.innerHTML = "";
+            
+            const bounds = map.getBounds();
+            let visibleCount = 0;
+
+            allSpots.forEach((spot) => {
+                const spotLatLng = L.latLng(spot.latitude, spot.longitude);
+                
+                if (bounds.contains(spotLatLng)) {
+                    visibleCount++;
                     const cardHtml = `
                         <div class="spot-card">
                             <div class="spot-placename">📍 ${spot.placename || "場所未設定"}</div>
@@ -299,20 +323,19 @@
                         </div>
                     `;
                     spotListContainer.insertAdjacentHTML('beforeend', cardHtml);
-                });
-
-                if (querySnapshot.empty) {
-                    spotListContainer.innerHTML = "<p style='text-align:center; color:#666;'>まだ登録された給水スポットがありません。</p>";
                 }
-            } catch (error) {
-                console.error("データの取得に失敗しました: ", error);
-                document.getElementById("spot-list").innerHTML = "<p style='text-align:center; color:red;'>データの読み込みに失敗しました。</p>";
+            });
+
+            if (visibleCount === 0) {
+                spotListContainer.innerHTML = "<p style='text-align:center; color:#666; margin-top: 20px;'>このエリアには給水スポットがありません💧<br>地図を動かして探してみてください。</p>";
             }
         }
 
+        map.on('moveend', updateSpotList);
+
         loadSpots();
 
-        // --- GPS現在地取得処理 ---
+        // --- GPS現在地取得と最短スポット検索処理 ---
         const gpsBtn = document.getElementById('gps-btn');
         let userMarker = null;
 
@@ -323,7 +346,7 @@
             }
 
             const originalText = gpsBtn.innerHTML;
-            gpsBtn.innerHTML = "⏳ 現在地を取得中...";
+            gpsBtn.innerHTML = "⏳ 近くのスポットを検索中...";
             gpsBtn.disabled = true;
 
             navigator.geolocation.getCurrentPosition(
@@ -333,20 +356,47 @@
                     gpsBtn.innerHTML = originalText;
                     gpsBtn.disabled = false;
 
+                    // ユーザーの現在地ピンを立てる
                     if (userMarker) {
                         map.removeLayer(userMarker);
                     }
-
                     const userIcon = L.divIcon({
                         className: '',
                         html: '<div class="user-location-marker"></div>',
                         iconSize: [22, 22],
                         iconAnchor: [11, 11]
                     });
-
                     userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
-                    userMarker.bindPopup("<b>あなたの現在地</b>").openPopup();
-                    map.setView([lat, lng], 17);
+                    userMarker.bindPopup("<b>あなたの現在地</b>");
+
+                    // 一番近い給水スポットを探す
+                    if (allSpots.length > 0) {
+                        let nearestSpot = null;
+                        let minDistance = Infinity;
+                        const userLatLng = L.latLng(lat, lng);
+
+                        allSpots.forEach(spot => {
+                            const spotLatLng = L.latLng(spot.latitude, spot.longitude);
+                            const distance = userLatLng.distanceTo(spotLatLng);
+                            
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                nearestSpot = spot;
+                            }
+                        });
+
+                        if (nearestSpot) {
+                            // 一番近いスポットに地図を移動して、ポップアップを開く
+                            map.setView([nearestSpot.latitude, nearestSpot.longitude], 18);
+                            
+                            setTimeout(() => {
+                                nearestSpot.marker.openPopup();
+                            }, 300);
+                        }
+                    } else {
+                        map.setView([lat, lng], 17);
+                        userMarker.openPopup();
+                    }
                 },
                 (error) => {
                     gpsBtn.innerHTML = originalText;
@@ -358,27 +408,19 @@
             );
         });
 
-        // --- 新機能：タブ切り替え処理 ---
+        // --- タブ切り替え処理 ---
         const navItems = document.querySelectorAll('.nav-item');
         const viewSections = document.querySelectorAll('.view-section');
 
         navItems.forEach(item => {
             item.addEventListener('click', () => {
-                // 1. 全部のナビゲーションの active (青色) を解除
                 navItems.forEach(nav => nav.classList.remove('active'));
-                
-                // 2. クリックされたナビゲーションを active にする
                 item.classList.add('active');
 
-                // 3. 全部の画面を一旦非表示にする
                 viewSections.forEach(section => section.classList.remove('active'));
-                
-                // 4. 対応するIDの画面だけを表示する
                 const targetId = item.getAttribute('data-target');
                 document.getElementById(targetId).classList.add('active');
 
-                // 5. Leaflet (地図) 特有のバグ対策
-                // 非表示から表示に切り替わった時に地図のグレーの空白ができないよう、サイズを再計算させる
                 if (targetId === 'view-map') {
                     setTimeout(() => {
                         map.invalidateSize();
