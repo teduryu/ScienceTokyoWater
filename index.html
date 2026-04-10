@@ -232,10 +232,10 @@
         // ==========================================
         // ★ Mapboxのアクセストークンを以下に入力してください
         // ==========================================
-        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN_HERE'; 
+        mapboxgl.accessToken = 'pk.eyJ1IjoidGVkdXJ1dSIsImEiOiJjbW5zd3VrZjAwZ21yMnBxeXo0bHdsbXV4In0.CrfX77lwGGqZUcecqEshMA'; 
 
         const map = new mapboxgl.Map({
-            container: 'map', style: 'mapbox://styles/mapbox/streets-v12',
+            container: 'map', style: 'mapbox://styles/mapbox/standard',
             center: [139.6833, 35.6061], zoom: 16, pitch: 45
         });
         map.addControl(new mapboxgl.NavigationControl(), 'top-right');
