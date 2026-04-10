@@ -45,8 +45,23 @@
             padding: 20px;
         }
 
+        /* --- 新規追加：画面切り替え用のスタイル --- */
+        .view-section {
+            display: none; /* 基本は非表示 */
+            animation: fadeIn 0.3s ease; /* ふわっと表示させるアニメーション */
+        }
+        .view-section.active {
+            display: block; /* activeクラスがついた画面だけ表示 */
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* -------------------------------------- */
+
         #map {
-            height: 300px;
+            height: 400px; /* マップ画面だけになったので少し大きくしました */
             width: 100%;
             border-radius: 20px;
             margin-bottom: 24px;
@@ -79,7 +94,6 @@
             box-shadow: 0 5px 10px rgba(59, 130, 246, 0.2);
         }
 
-        /* GPS取得中などボタンを押せなくした時のスタイル */
         .btn-large:disabled {
             background: #94A3B8;
             box-shadow: none;
@@ -157,10 +171,12 @@
             color: var(--text-sub);
             font-weight: 500;
             cursor: pointer;
+            width: 33%; /* タップしやすいように幅を広げる */
         }
 
         .nav-icon {
             font-size: 1.4rem;
+            transition: transform 0.2s ease;
         }
 
         .nav-item.active {
@@ -168,9 +184,9 @@
         }
         .nav-item.active .nav-icon {
             filter: grayscale(0) drop-shadow(0 2px 4px rgba(59, 130, 246, 0.4));
+            transform: translateY(-2px) scale(1.1); /* 選択されたアイコンを少し大きくする */
         }
 
-        /* ユーザーの現在地を示す赤い丸のスタイル */
         .user-location-marker {
             background-color: #EF4444;
             width: 16px;
@@ -186,23 +202,42 @@
     <header>💧 Campus Water</header>
 
     <div class="container">
-        <div id="map"></div>
-
-        <button id="gps-btn" class="btn-large">
-            <span style="font-size: 1.2rem;">📍</span> 現在地から一番近い給水機を探す
-        </button>
-
-        <h2 class="section-title">近くの給水スポット</h2>
-
-        <div id="spot-list">
-            <p style="text-align: center; color: #666; font-size: 0.9rem;">データを読み込み中...</p>
+        
+        <div id="view-map" class="view-section active">
+            <div id="map"></div>
+            <button id="gps-btn" class="btn-large">
+                <span style="font-size: 1.2rem;">📍</span> 現在地から一番近い給水機を探す
+            </button>
         </div>
+
+        <div id="view-list" class="view-section">
+            <h2 class="section-title">近くの給水スポット</h2>
+            <div id="spot-list">
+                <p style="text-align: center; color: #666; font-size: 0.9rem;">データを読み込み中...</p>
+            </div>
+        </div>
+
+        <div id="view-report" class="view-section">
+            <h2 class="section-title">故障・問題の報告</h2>
+            <div class="spot-card" style="text-align: center; padding: 40px 20px;">
+                <span style="font-size: 3rem; display: block; margin-bottom: 10px;">🛠️</span>
+                <h3 style="margin-bottom: 10px;">準備中</h3>
+                <p style="color: #666; font-size: 0.9rem;">現在、故障を報告する機能を開発しています。<br>もうしばらくお待ちください！</p>
+            </div>
+        </div>
+
     </div>
 
     <div class="bottom-nav">
-        <div class="nav-item active"><span class="nav-icon">🗺️</span><span>マップ</span></div>
-        <div class="nav-item"><span class="nav-icon">📋</span><span>リスト</span></div>
-        <div class="nav-item"><span class="nav-icon">⚠️</span><span>故障報告</span></div>
+        <div class="nav-item active" data-target="view-map">
+            <span class="nav-icon">🗺️</span><span>マップ</span>
+        </div>
+        <div class="nav-item" data-target="view-list">
+            <span class="nav-icon">📋</span><span>リスト</span>
+        </div>
+        <div class="nav-item" data-target="view-report">
+            <span class="nav-icon">⚠️</span><span>故障報告</span>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -226,6 +261,7 @@
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
+        // --- 地図とデータの初期化 ---
         const campusLocation = [35.6061, 139.6833];
         const map = L.map('map').setView(campusLocation, 16);
         
@@ -234,7 +270,6 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Firebaseから給水スポットを読み込む
         async function loadSpots() {
             try {
                 const querySnapshot = await getDocs(collection(db, "spots"));
@@ -277,68 +312,79 @@
 
         loadSpots();
 
-        // --- ここから新機能：GPSによる現在地取得 ---
-        
+        // --- GPS現在地取得処理 ---
         const gpsBtn = document.getElementById('gps-btn');
-        let userMarker = null; // ユーザーの現在地ピンを保存しておく変数
+        let userMarker = null;
 
         gpsBtn.addEventListener('click', () => {
-            // ブラウザがGPSに対応しているかチェック
             if (!navigator.geolocation) {
                 alert("お使いのブラウザは現在地取得に対応していません。");
                 return;
             }
 
-            // 取得中の状態にする（ボタンの文字を変えて、連打できないようにする）
             const originalText = gpsBtn.innerHTML;
             gpsBtn.innerHTML = "⏳ 現在地を取得中...";
             gpsBtn.disabled = true;
 
-            // GPSを取得
             navigator.geolocation.getCurrentPosition(
-                // 成功した時の処理
                 (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
-
-                    // ボタンを元の状態に戻す
                     gpsBtn.innerHTML = originalText;
                     gpsBtn.disabled = false;
 
-                    // 前の現在地ピンが残っていたら消す
                     if (userMarker) {
                         map.removeLayer(userMarker);
                     }
 
-                    // ユーザー用の特別なピン（CSSで作った赤い丸）を作成
                     const userIcon = L.divIcon({
-                        className: '', // デフォルトの枠線を消す
+                        className: '',
                         html: '<div class="user-location-marker"></div>',
                         iconSize: [22, 22],
                         iconAnchor: [11, 11]
                     });
 
-                    // 地図に現在地ピンを立てる
                     userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
                     userMarker.bindPopup("<b>あなたの現在地</b>").openPopup();
-
-                    // 地図を現在地に移動して、少しズームする
                     map.setView([lat, lng], 17);
                 },
-                // 失敗した時の処理（拒否された、電波がない等）
                 (error) => {
                     gpsBtn.innerHTML = originalText;
                     gpsBtn.disabled = false;
                     alert("現在地を取得できませんでした。スマホやブラウザの位置情報設定を確認してください。");
                     console.error("GPSエラー:", error);
                 },
-                // GPSの設定オプション
-                {
-                    enableHighAccuracy: true, // 高精度で取得する
-                    timeout: 10000,           // 10秒経ってもダメならエラーにする
-                    maximumAge: 0             // 古いデータは使わず常に最新を取得する
-                }
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
+        });
+
+        // --- 新機能：タブ切り替え処理 ---
+        const navItems = document.querySelectorAll('.nav-item');
+        const viewSections = document.querySelectorAll('.view-section');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // 1. 全部のナビゲーションの active (青色) を解除
+                navItems.forEach(nav => nav.classList.remove('active'));
+                
+                // 2. クリックされたナビゲーションを active にする
+                item.classList.add('active');
+
+                // 3. 全部の画面を一旦非表示にする
+                viewSections.forEach(section => section.classList.remove('active'));
+                
+                // 4. 対応するIDの画面だけを表示する
+                const targetId = item.getAttribute('data-target');
+                document.getElementById(targetId).classList.add('active');
+
+                // 5. Leaflet (地図) 特有のバグ対策
+                // 非表示から表示に切り替わった時に地図のグレーの空白ができないよう、サイズを再計算させる
+                if (targetId === 'view-map') {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 10);
+                }
+            });
         });
     </script>
 </body>
