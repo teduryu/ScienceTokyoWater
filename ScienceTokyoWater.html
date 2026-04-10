@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Water - 大学給水スポットマップ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #0EA5E9, #3B82F6);
+            --primary-color: #3B82F6;
+            --bg-color: #F1F5F9;
+            --card-bg: #FFFFFF;
+            --text-main: #0F172A;
+            --text-sub: #64748B;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 90px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            text-align: center;
+            padding: 18px 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        #map {
+            height: 300px;
+            width: 100%;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 2px solid white;
+            z-index: 1;
+        }
+
+        .btn-large {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 1.05rem;
+            border-radius: 50px;
+            margin-bottom: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+            font-weight: 700;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .btn-large:active {
+            transform: scale(0.97);
+            box-shadow: 0 5px 10px rgba(59, 130, 246, 0.2);
+        }
+
+        /* GPS取得中などボタンを押せなくした時のスタイル */
+        .btn-large:disabled {
+            background: #94A3B8;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        .spot-card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .spot-placename {
+            font-size: 0.85rem;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .spot-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 0 0 6px 0;
+        }
+
+        .spot-location {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin: 0 0 12px 0;
+            line-height: 1.4;
+        }
+
+        .spot-time {
+            font-size: 0.9rem;
+            background-color: #F8FAFC;
+            padding: 8px 12px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0 20px 0;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .nav-icon {
+            font-size: 1.4rem;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+        .nav-item.active .nav-icon {
+            filter: grayscale(0) drop-shadow(0 2px 4px rgba(59, 130, 246, 0.4));
+        }
+
+        /* ユーザーの現在地を示す赤い丸のスタイル */
+        .user-location-marker {
+            background-color: #EF4444;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <header>💧 Campus Water</header>
+
+    <div class="container">
+        <div id="map"></div>
+
+        <button id="gps-btn" class="btn-large">
+            <span style="font-size: 1.2rem;">📍</span> 現在地から一番近い給水機を探す
+        </button>
+
+        <h2 class="section-title">近くの給水スポット</h2>
+
+        <div id="spot-list">
+            <p style="text-align: center; color: #666; font-size: 0.9rem;">データを読み込み中...</p>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active"><span class="nav-icon">🗺️</span><span>マップ</span></div>
+        <div class="nav-item"><span class="nav-icon">📋</span><span>リスト</span></div>
+        <div class="nav-item"><span class="nav-icon">⚠️</span><span>故障報告</span></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg",
+            authDomain: "sciencetokyowater.firebaseapp.com",
+            projectId: "sciencetokyowater",
+            storageBucket: "sciencetokyowater.firebasestorage.app",
+            messagingSenderId: "1039095456448",
+            appId: "1:1039095456448:web:548ed9fcc01c811b470325",
+            measurementId: "G-MLWR226QD1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
+        const campusLocation = [35.6061, 139.6833];
+        const map = L.map('map').setView(campusLocation, 16);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Firebaseから給水スポットを読み込む
+        async function loadSpots() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "spots"));
+                const spotListContainer = document.getElementById("spot-list");
+                spotListContainer.innerHTML = "";
+                
+                querySnapshot.forEach((doc) => {
+                    const spot = doc.data();
+                    
+                    if (spot.latitude && spot.longitude) {
+                        const marker = L.marker([spot.latitude, spot.longitude]).addTo(map);
+                        const popupContent = `
+                            <div style="font-size:0.85em; color:#3B82F6; margin-bottom:2px;">📍 ${spot.placename || "場所未設定"}</div>
+                            <b style="font-size:1.1em;">${spot.name}</b><br>
+                            <span style="color:#666;">${spot.description || ""}</span><br>
+                            <div style="margin-top:6px;">🕒 使用可能時間: <b>${spot.available_hours || "不明"}</b></div>
+                        `;
+                        marker.bindPopup(popupContent);
+                    }
+
+                    const cardHtml = `
+                        <div class="spot-card">
+                            <div class="spot-placename">📍 ${spot.placename || "場所未設定"}</div>
+                            <h3 class="spot-title">${spot.name}</h3>
+                            <p class="spot-location">${spot.description || ""}</p>
+                            <div class="spot-time">🕒 使用可能時間: <b>${spot.available_hours || "不明"}</b></div>
+                        </div>
+                    `;
+                    spotListContainer.insertAdjacentHTML('beforeend', cardHtml);
+                });
+
+                if (querySnapshot.empty) {
+                    spotListContainer.innerHTML = "<p style='text-align:center; color:#666;'>まだ登録された給水スポットがありません。</p>";
+                }
+            } catch (error) {
+                console.error("データの取得に失敗しました: ", error);
+                document.getElementById("spot-list").innerHTML = "<p style='text-align:center; color:red;'>データの読み込みに失敗しました。</p>";
+            }
+        }
+
+        loadSpots();
+
+        // --- ここから新機能：GPSによる現在地取得 ---
+        
+        const gpsBtn = document.getElementById('gps-btn');
+        let userMarker = null; // ユーザーの現在地ピンを保存しておく変数
+
+        gpsBtn.addEventListener('click', () => {
+            // ブラウザがGPSに対応しているかチェック
+            if (!navigator.geolocation) {
+                alert("お使いのブラウザは現在地取得に対応していません。");
+                return;
+            }
+
+            // 取得中の状態にする（ボタンの文字を変えて、連打できないようにする）
+            const originalText = gpsBtn.innerHTML;
+            gpsBtn.innerHTML = "⏳ 現在地を取得中...";
+            gpsBtn.disabled = true;
+
+            // GPSを取得
+            navigator.geolocation.getCurrentPosition(
+                // 成功した時の処理
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    // ボタンを元の状態に戻す
+                    gpsBtn.innerHTML = originalText;
+                    gpsBtn.disabled = false;
+
+                    // 前の現在地ピンが残っていたら消す
+                    if (userMarker) {
+                        map.removeLayer(userMarker);
+                    }
+
+                    // ユーザー用の特別なピン（CSSで作った赤い丸）を作成
+                    const userIcon = L.divIcon({
+                        className: '', // デフォルトの枠線を消す
+                        html: '<div class="user-location-marker"></div>',
+                        iconSize: [22, 22],
+                        iconAnchor: [11, 11]
+                    });
+
+                    // 地図に現在地ピンを立てる
+                    userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map);
+                    userMarker.bindPopup("<b>あなたの現在地</b>").openPopup();
+
+                    // 地図を現在地に移動して、少しズームする
+                    map.setView([lat, lng], 17);
+                },
+                // 失敗した時の処理（拒否された、電波がない等）
+                (error) => {
+                    gpsBtn.innerHTML = originalText;
+                    gpsBtn.disabled = false;
+                    alert("現在地を取得できませんでした。スマホやブラウザの位置情報設定を確認してください。");
+                    console.error("GPSエラー:", error);
+                },
+                // GPSの設定オプション
+                {
+                    enableHighAccuracy: true, // 高精度で取得する
+                    timeout: 10000,           // 10秒経ってもダメならエラーにする
+                    maximumAge: 0             // 古いデータは使わず常に最新を取得する
+                }
+            );
+        });
+    </script>
+</body>
+</html>
