@@ -371,6 +371,12 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker Registered'));
+  }
+    </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
