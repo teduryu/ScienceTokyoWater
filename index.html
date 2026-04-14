@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
     <style>
         :root {
@@ -51,19 +51,20 @@
         .view-section.active { display: block; height: 100%; min-height: calc(100vh - 140px); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- マップ画面 & ポップアップ --- */
+        /* --- マップ画面 (Leaflet) --- */
         #view-map.active { position: fixed; top: 0; left: 0; right: 0; bottom: 0; padding: 0; z-index: 10; }
         #map { width: 100%; height: 100%; z-index: 1; }
-        .mapboxgl-ctrl-top-right { top: 65px !important; right: 10px !important; }
-        .mapboxgl-ctrl-bottom-left { display: none !important; }
+        .leaflet-top { top: 65px !important; }
         
-        /* コンパクトなポップアップデザイン */
-        .mapboxgl-popup-content { border-radius: 12px; padding: 12px; box-shadow: 0 4px 20px rgba(28,49,119,0.15); font-family: 'Hind', 'Noto Sans JP', sans-serif; width: 200px; }
-        .mapboxgl-popup-close-button { font-size: 1.2rem; padding: 4px 8px; color: var(--text-sub); outline: none; }
+        /* ★ Leaflet ポップアップのコンパクト化・洗練 */
+        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(28,49,119,0.15); }
+        .leaflet-popup-content { margin: 14px; font-family: 'Hind', 'Noto Sans JP', sans-serif; width: 200px !important; }
+        .leaflet-container a.leaflet-popup-close-button { color: var(--text-sub); top: 8px; right: 8px; font-size: 1.2rem; }
+        
         .custom-popup { display: flex; flex-direction: column; gap: 4px; }
         .popup-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 600; }
-        .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--science-blue); line-height: 1.3; }
-        .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; margin-top: 4px; }
+        .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--science-blue); line-height: 1.3; margin-bottom: 2px; }
+        .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; margin-top: 6px; }
         .popup-btn:active { background: var(--bg-darker); }
 
         .floating-ui-top { position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
@@ -72,10 +73,8 @@
         .floating-ui-bottom { position: absolute; bottom: calc(65px + env(safe-area-inset-bottom)); left: 0; width: 100%; z-index: 1000; pointer-events: none; }
 
         .horizontal-scroll-list { 
-            pointer-events: auto; 
-            display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px; 
-            scroll-snap-type: x mandatory; 
-            scrollbar-width: thin; scrollbar-color: rgba(28, 49, 119, 0.3) transparent;
+            pointer-events: auto; display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px; 
+            scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: rgba(28, 49, 119, 0.3) transparent;
         }
         .horizontal-scroll-list::-webkit-scrollbar { height: 6px; display: none; }
         @media (min-width: 768px) { .horizontal-scroll-list::-webkit-scrollbar { display: block; } }
@@ -88,15 +87,12 @@
             border: 1px solid var(--bg-darker); margin-bottom: 0; padding: 12px 14px; border-radius: 16px;
             max-width: 320px;
         }
-        #map-visible-list .spot-title { font-size: 0.95rem; margin: 4px 0; }
-        #map-visible-list .status-badge { top: 12px; right: 12px; padding: 3px 6px; font-size: 0.65rem; }
 
         .empty-message-pill { pointer-events: auto; background: rgba(255,255,255,0.98); padding: 12px 24px; border-radius: 30px; margin: 0 auto; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); box-shadow: 0 8px 20px rgba(28, 49, 119, 0.1); border: 1px solid var(--bg-darker); }
 
         .btn-large { pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--science-blue); color: white; border: none; padding: 12px; font-size: 0.95rem; border-radius: 50px; cursor: pointer; font-weight: 700; font-family: inherit; transition: all 0.2s; }
         .btn-large:active { transform: scale(0.98); background: #15265b; }
         .btn-large:disabled { background: var(--science-sub); cursor: not-allowed; transform: none; }
-        
         .btn-secondary { background: var(--science-sub); box-shadow: 0 4px 10px rgba(127, 150, 194, 0.3); }
 
         .controls { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
@@ -107,7 +103,6 @@
 
         .section-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; color: var(--science-blue); }
 
-        /* --- スポットカードのメタデータデザイン --- */
         .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(28, 49, 119, 0.04); position: relative; border: 1px solid var(--bg-darker); }
         .clickable-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
         .clickable-card:active { transform: scale(0.98); background-color: #f8fafc; }
@@ -116,9 +111,9 @@
         .dist-badge { background: var(--bg-darker); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--science-blue); }
         .closed-days { color: var(--accent-red); font-weight: 600; font-size: 0.85em; margin-left: 4px; }
 
-        /* --- フォーム・特徴バッジ --- */
+        /* --- フォーム --- */
         form label { display: block; margin-top: 14px; margin-bottom: 6px; font-size: 0.85rem; color: var(--science-blue); font-weight: 700; }
-        form input[type="text"], form input[type="number"], form input[type="file"], form textarea { width: 100%; padding: 10px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 0.95rem; background: white; }
+        form input[type="text"], form input[type="file"], form textarea { width: 100%; padding: 10px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 0.95rem; background: white; }
         form input:focus, form textarea:focus { outline: none; border-color: var(--science-blue); box-shadow: 0 0 0 2px rgba(28, 49, 119, 0.1); }
 
         .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-color); color: var(--science-sub); border: 1px solid var(--bg-darker); border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
@@ -131,7 +126,7 @@
         .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); transition: transform 0.1s; }
         .center-pin.moving { transform: translate(-50%, -120%); }
 
-        /* --- 詳細ページ・コメント関連 --- */
+        /* --- 詳細ページ・コメント --- */
         .detail-image { width: 100%; height: 220px; object-fit: contain; border-radius: 12px; margin-bottom: 15px; background-color: var(--bg-color); border: 1px solid var(--bg-darker); }
         .detail-back-btn { background: none; border: none; color: var(--science-sub); font-size: 1rem; font-weight: bold; padding: 8px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: color 0.2s; }
         .detail-back-btn:active { color: var(--science-blue); }
@@ -166,7 +161,6 @@
         .status-closed { background: #fdf0f0; color: var(--accent-red); }
         .spot-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 700; line-height: 1.2; }
         .spot-title { font-size: 1rem; font-weight: 700; margin: 4px 0 6px 0; color: var(--text-main); line-height: 1.3; display: flex; align-items: center; gap: 6px; }
-        
         .camera-icon { width: 14px; height: 14px; color: var(--science-sub); }
     </style>
 </head>
@@ -221,6 +215,7 @@
                 </div>
                 <input type="hidden" id="add-lat" required>
                 <input type="hidden" id="add-lng" required>
+                
                 <button type="button" id="btn-get-location" class="btn-large btn-secondary" style="margin-top:8px; font-size: 0.85rem;">現在地を取得</button>
 
                 <label>特徴 (複数選択可)</label>
@@ -303,7 +298,7 @@
         </div>
     </div>
 
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }</script>
 
     <script type="module">
@@ -325,14 +320,15 @@
         const storage = getStorage(app);
 
         // ==========================================
-        mapboxgl.accessToken = 'pk.eyJ1IjoidGVkdXJ1dSIsImEiOiJjbW5zd3VrZjAwZ21yMnBxeXo0bHdsbXV4In0.CrfX77lwGGqZUcecqEshMA';
+        // ★ Leaflet + Tracestrack Maps (OSM) の初期化
         // ==========================================
+        const map = L.map('map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
         
-        const map = new mapboxgl.Map({
-            container: 'map', style: 'mapbox://styles/mapbox/standard',
-            center: [139.6833, 35.6061], zoom: 16, pitch: 45
-        });
-        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        // Tracestrack Topo タイルを読み込み
+        L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles &copy; Tracestrack'
+        }).addTo(map);
 
         let addMap = null;
         let allSpots = [];
@@ -359,6 +355,7 @@
             });
         }
 
+        // Leafletは [lat, lng] 形式なので計算関数の引数順に注意
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
             const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180;
@@ -436,8 +433,9 @@
             const spot = allSpots.find(s => s.id === id);
             if (!spot) return;
             document.querySelector('[data-target="view-map"]').click();
-            map.flyTo({ center: [spot.longitude, spot.latitude], zoom: 18, speed: 1.5 });
-            setTimeout(() => { if (!spot.marker.getPopup().isOpen()) spot.marker.togglePopup(); }, 800);
+            // LeafletのflyToは [lat, lng]
+            map.flyTo([spot.latitude, spot.longitude], 18, { animate: true, duration: 1.5 });
+            setTimeout(() => { spot.marker.openPopup(); }, 1600);
         }
 
         window.showDetail = function(id) {
@@ -496,7 +494,8 @@
         function updateMapVisibleList() {
             const container = document.getElementById("map-visible-list");
             const bounds = map.getBounds();
-            const visibleSpots = allSpots.filter(s => bounds.contains([s.longitude, s.latitude]));
+            // Leafletの bounds.contains は [lat, lng] (L.latLng)
+            const visibleSpots = allSpots.filter(s => bounds.contains(L.latLng(s.latitude, s.longitude)));
             container.innerHTML = visibleSpots.length > 0 ? visibleSpots.map(s => createCard(s, 'flyToSpot')).join('') : `<div class="empty-message-pill">このエリアに見つかりませんでした</div>`;
         }
 
@@ -505,7 +504,7 @@
             const sortBy = document.getElementById("sort-select").value;
             let displaySpots = [...allSpots];
             
-            if (userLocation) { displaySpots.forEach(s => { s.distance = getDistance(userLocation[1], userLocation[0], s.latitude, s.longitude); }); }
+            if (userLocation) { displaySpots.forEach(s => { s.distance = getDistance(userLocation[0], userLocation[1], s.latitude, s.longitude); }); }
             if (filterOpenOnly) displaySpots = displaySpots.filter(s => isOpen(s));
             
             if (sortBy === "distance" && userLocation) { 
@@ -516,12 +515,13 @@
             
             container.innerHTML = displaySpots.map(s => createCard(s, 'showDetail')).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません</p>";
 
+            // Leafletでの表示・非表示コントロール
             allSpots.forEach(spot => {
                 const isVisible = filterOpenOnly ? isOpen(spot) : true;
                 if (isVisible) {
-                    if (!spot.marker.getMap()) spot.marker.addTo(map);
+                    if (!map.hasLayer(spot.marker)) spot.marker.addTo(map);
                 } else {
-                    if (spot.marker.getMap()) spot.marker.remove();
+                    if (map.hasLayer(spot.marker)) map.removeLayer(spot.marker);
                 }
             });
         }
@@ -531,7 +531,7 @@
             const safeName = escapeHTML(spot.name);
             const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
             
-            // ★ ポップアップのコンパクト化・絵文字削除
+            // ★ 洗練されたLeafletポップアップHTML
             const popupHtml = `
                 <div class="custom-popup">
                     <div class="popup-placename">${safePlacename}</div>
@@ -540,8 +540,8 @@
                     <button class="popup-btn" onclick="showDetail('${spot.id}')">詳細を見る</button>
                 </div>
             `;
-            const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml);
-            const marker = new mapboxgl.Marker({ color: 'var(--science-blue)' }).setLngLat([spot.longitude, spot.latitude]).setPopup(popup).addTo(map);
+            const marker = L.marker([spot.latitude, spot.longitude]).addTo(map);
+            marker.bindPopup(popupHtml);
             spot.marker = marker;
             allSpots.push(spot);
         }
@@ -574,9 +574,23 @@
 
         document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.currentTarget.classList.toggle('active'); updateFullList(); });
         
-        function getGPS() { return new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 })); }
+        // --- ★ GPSの堅牢化（フォールバック機能の実装） ---
+        function getGPS() { 
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, 
+                    (err) => {
+                        console.warn("高精度GPS取得失敗、低精度に切り替えます:", err);
+                        // 高精度が失敗した場合、タイムアウトを伸ばして低精度で再トライ
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: false, timeout: 10000, maximumAge: 60000
+                        });
+                    }, 
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            }); 
+        }
 
-        // --- ★ GPSエラーバグの完全修正 ---
+        // --- ★ GPS即時失敗バグの修正（取得とUI更新の分離） ---
         document.getElementById('gps-btn').addEventListener('click', async () => {
             if (!navigator.geolocation) return alert("現在地取得に対応していません。");
             const btn = document.getElementById('gps-btn'); 
@@ -585,41 +599,56 @@
             btn.disabled = true;
 
             let pos;
-            // 1. 位置情報の取得のみを分離してエラーハンドリング
             try {
+                // ここでは純粋に位置情報の取得のみを行う
                 pos = await getGPS();
             } catch(err) { 
                 btn.innerHTML = originalHTML; 
                 btn.disabled = false; 
-                alert("現在地を取得できませんでした。端末の位置情報設定を確認してください。");
-                return; // ここで処理を終了する
+                alert("現在地の取得に失敗しました。端末の位置情報サービスがオンになっているか確認してください。");
+                return; // 失敗した場合はここで処理を打ち切る
             }
 
-            // 2. 取得成功後の処理（ここでエラーが起きてもGPS失敗のアラートは出ない）
+            // GPS取得に成功した後のUI更新処理
             try {
                 btn.innerHTML = originalHTML; 
                 btn.disabled = false;
-                userLocation = [pos.coords.longitude, pos.coords.latitude];
-                if (userMarker) userMarker.remove();
-                const el = document.createElement('div'); el.className = 'user-location-marker';
-                userMarker = new mapboxgl.Marker(el).setLngLat(userLocation).addTo(map);
+                userLocation = [pos.coords.latitude, pos.coords.longitude]; // Leafletは [lat, lng]
+                
+                if (userMarker) {
+                    map.removeLayer(userMarker);
+                }
+                const userIcon = L.divIcon({ className: '', html: '<div class="user-location-marker"></div>' });
+                userMarker = L.marker(userLocation, {icon: userIcon}).addTo(map);
                 
                 let nearest = null; let minD = Infinity;
-                allSpots.forEach(s => { const d = getDistance(userLocation[1], userLocation[0], s.latitude, s.longitude); if (d < minD) { minD = d; nearest = s; }});
-                if (nearest) { map.flyTo({ center: [nearest.longitude, nearest.latitude], zoom: 18, speed: 1.5 }); setTimeout(() => nearest.marker.togglePopup(), 800); } 
-                else { map.flyTo({ center: userLocation, zoom: 17 }); }
+                allSpots.forEach(s => { const d = getDistance(userLocation[0], userLocation[1], s.latitude, s.longitude); if (d < minD) { minD = d; nearest = s; }});
+                
+                if (nearest) { 
+                    map.flyTo([nearest.latitude, nearest.longitude], 18, { animate: true, duration: 1.5 }); 
+                    setTimeout(() => nearest.marker.openPopup(), 1600); 
+                } else { 
+                    map.flyTo(userLocation, 17, { animate: true, duration: 1.5 }); 
+                }
+                
                 updateFullList();
-                const sortSelect = document.getElementById("sort-select"); if(sortSelect.value === "default") { sortSelect.value = "distance"; updateFullList(); }
+                const sortSelect = document.getElementById("sort-select"); 
+                if(sortSelect.value === "default") { sortSelect.value = "distance"; updateFullList(); }
             } catch(err) { 
-                console.error("GPS取得後の内部エラー:", err); 
+                console.error("GPS取得後のUI処理エラー:", err); 
             }
         });
 
+        // --- 追加用マップ (Leaflet + Tracestrack) ---
         function initAddMap() {
             if (addMap) return;
-            addMap = new mapboxgl.Map({ container: 'add-map', style: 'mapbox://styles/mapbox/standard', center: [139.6833, 35.6061], zoom: 16 });
+            addMap = L.map('add-map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
+            L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(addMap);
+            
             const pinEl = document.getElementById('center-pin');
-            const latInput = document.getElementById('add-lat'); const lngInput = document.getElementById('add-lng');
+            const latInput = document.getElementById('add-lat'); 
+            const lngInput = document.getElementById('add-lng');
+            
             addMap.on('movestart', () => pinEl.classList.add('moving'));
             addMap.on('move', () => { const center = addMap.getCenter(); latInput.value = center.lat.toFixed(6); lngInput.value = center.lng.toFixed(6); });
             addMap.on('moveend', () => pinEl.classList.remove('moving'));
@@ -627,16 +656,17 @@
         }
 
         document.getElementById('btn-get-location').addEventListener('click', async () => {
-            const btn = document.getElementById('btn-get-location'); const originalText = btn.innerHTML;
-            btn.innerHTML = "取得中..."; btn.disabled = true;
+            const btn = document.getElementById('btn-get-location'); 
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "取得中..."; 
+            btn.disabled = true;
             try { 
                 const pos = await getGPS(); 
-                if (addMap) { addMap.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 18 }); } 
+                if (addMap) { addMap.flyTo([pos.coords.latitude, pos.coords.longitude], 18, { animate: true }); } 
                 btn.innerHTML = "取得完了"; 
                 setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000); 
-            } catch(err) { 
-                alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; 
-            }
+            } 
+            catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
         });
 
         // 新規スポットの追加処理
@@ -750,8 +780,8 @@
                 }
                 
                 document.getElementById(targetId).classList.add('active');
-                if (targetId === 'view-map') setTimeout(() => map.resize(), 100);
-                if (targetId === 'view-add') { initAddMap(); setTimeout(() => addMap.resize(), 100); }
+                if (targetId === 'view-map') setTimeout(() => map.invalidateSize(), 100);
+                if (targetId === 'view-add') { initAddMap(); setTimeout(() => addMap.invalidateSize(), 100); }
                 window.scrollTo(0, 0);
             });
         });
