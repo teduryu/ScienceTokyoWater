@@ -54,16 +54,26 @@
         .mapboxgl-popup-close-button { font-size: 1.2rem; padding: 4px 8px; color: var(--text-sub); }
 
         .floating-ui-top { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
-        .floating-btn { width: auto; padding: 10px 24px; font-size: 0.9rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; }
+        .floating-btn { width: auto; padding: 10px 24px; font-size: 0.9rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; pointer-events: auto; }
         .floating-ui-bottom { position: absolute; bottom: 85px; left: 0; width: 100%; z-index: 1000; pointer-events: none; }
 
-        .horizontal-scroll-list { display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-        .horizontal-scroll-list::-webkit-scrollbar { display: none; }
+        /* ★ 修正ポイント: pointer-events: auto; を追加し、PC向けにスクロールバーのデザインを微調整 */
+        .horizontal-scroll-list { 
+            pointer-events: auto; 
+            display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px; 
+            scroll-snap-type: x mandatory; 
+            scrollbar-width: thin; scrollbar-color: rgba(28, 49, 119, 0.3) transparent;
+        }
+        .horizontal-scroll-list::-webkit-scrollbar { height: 6px; }
+        .horizontal-scroll-list::-webkit-scrollbar-thumb { background: rgba(28, 49, 119, 0.3); border-radius: 10px; }
+        .horizontal-scroll-list::-webkit-scrollbar-track { background: transparent; }
         
         #map-visible-list .spot-card { 
             pointer-events: auto; flex: 0 0 78%; scroll-snap-align: center; 
             background-color: rgba(255, 255, 255, 0.98); box-shadow: 0 6px 20px rgba(28, 49, 119, 0.15);
             border: 1px solid var(--bg-darker); margin-bottom: 0; padding: 12px 16px; border-radius: 16px;
+            /* PC画面でカード幅が広がりすぎないように最大幅を指定 */
+            max-width: 350px;
         }
         #map-visible-list .spot-title { font-size: 0.95rem; margin: 4px 0; }
         #map-visible-list .status-badge { top: 12px; right: 12px; padding: 3px 6px; font-size: 0.65rem; }
@@ -72,6 +82,8 @@
 
         .btn-large { pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--science-blue); color: white; border: none; padding: 14px; font-size: 1rem; border-radius: 50px; cursor: pointer; font-weight: 700; font-family: inherit; transition: all 0.2s; }
         .btn-large:active { transform: scale(0.98); background: #15265b; }
+        .btn-large:disabled { background: var(--science-sub); cursor: not-allowed; transform: none; }
+        
         .btn-secondary { background: var(--science-sub); box-shadow: 0 4px 10px rgba(127, 150, 194, 0.3); }
 
         .controls { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
@@ -194,7 +206,7 @@
                     <input type="checkbox" id="d7" name="closed_days" value="7" class="feature-checkbox"><label for="d7" class="feature-label">祝</label>
                 </div>
 
-                <label>画像 (任意)</label>
+                <label>画像 (5MB以下 / 任意)</label>
                 <input type="file" id="add-image" accept="image/*">
 
                 <button type="submit" id="submit-btn" class="btn-large" style="margin-top:20px;">➕ この内容で申請する</button>
@@ -222,7 +234,7 @@
                     <form id="add-comment-form" style="display: flex; flex-direction: column; gap: 10px;">
                         <input type="text" id="comment-name" placeholder="お名前 (省略可)">
                         <textarea id="comment-text" required placeholder="スポットに関するコメントを入力..." style="resize: vertical; min-height: 80px;"></textarea>
-                        <button type="submit" class="btn-large" style="padding: 12px; font-size: 0.95rem; border-radius: 8px;">送信する</button>
+                        <button type="submit" id="submit-comment-btn" class="btn-large" style="padding: 12px; font-size: 0.95rem; border-radius: 8px;">送信する</button>
                     </form>
                 </div>
             </div>
@@ -279,7 +291,16 @@
         window.onbeforeunload = () => isFormDirty ? "入力内容が破棄されますがよろしいですか？" : null;
         document.getElementById('add-spot-form').addEventListener('input', () => isFormDirty = true);
 
-        // ★ デバッグ修正: XSS脆弱性対策用エスケープ関数
+        // ★ 修正1: PC向けのマウスホイールによる横スクロール対応
+        const scrollList = document.getElementById("map-visible-list");
+        scrollList.addEventListener('wheel', (e) => {
+            // 縦スクロール要素上で横スクロールを実現
+            if (e.deltaY !== 0) {
+                e.preventDefault(); // デフォルトの縦スクロールをキャンセル
+                scrollList.scrollBy({ left: e.deltaY < 0 ? -150 : 150, behavior: 'smooth' });
+            }
+        });
+
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
             return str.replace(/[&<>'"]/g, match => {
@@ -323,7 +344,6 @@
             return ` <span style="color:var(--accent-red); font-weight:bold;">(休: ${closed.map(d => dayNames[d]).join(',')})</span>`;
         }
 
-        // --- ★ コメント読み込み処理 ---
         async function loadComments(spotId) {
             const commentsListEl = document.getElementById('detail-comments-list');
             commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--text-sub);">コメントを読み込み中...</p>';
@@ -332,7 +352,6 @@
                 let comments = [];
                 qSnap.forEach(doc => comments.push(doc.data()));
                 
-                // 日付が古い順にソート
                 comments.sort((a, b) => {
                     const timeA = a.created_at ? a.created_at.toMillis() : 0;
                     const timeB = b.created_at ? b.created_at.toMillis() : 0;
@@ -345,7 +364,6 @@
                 }
 
                 commentsListEl.innerHTML = comments.map(c => {
-                    // ★ デバッグ修正: 投稿直後のキャッシュエラー(null)を回避するためのフォールバック処理
                     const dateObj = c.created_at ? new Date(c.created_at.toMillis()) : new Date();
                     const dateStr = dateObj.toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
                     return `
@@ -364,7 +382,6 @@
             }
         }
 
-        // --- グローバル関数の登録 ---
         window.flyToSpot = function(id) {
             const spot = allSpots.find(s => s.id === id);
             if (!spot) return;
@@ -395,7 +412,6 @@
             const featuresEl = document.getElementById('detail-features');
             featuresEl.innerHTML = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
             
-            // コメントの読み込みを実行
             loadComments(id);
             
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
@@ -439,12 +455,15 @@
             
             if (userLocation) { displaySpots.forEach(s => { s.distance = getDistance(userLocation[1], userLocation[0], s.latitude, s.longitude); }); }
             if (filterOpenOnly) displaySpots = displaySpots.filter(s => isOpen(s));
-            if (sortBy === "distance" && userLocation) { displaySpots.sort((a, b) => a.distance - b.distance); }
-            else { displaySpots.sort((a, b) => a.name.localeCompare(b.name, 'ja')); }
+            
+            if (sortBy === "distance" && userLocation) { 
+                displaySpots.sort((a, b) => a.distance - b.distance); 
+            } else { 
+                displaySpots.sort((a, b) => a.name.localeCompare(b.name, 'ja')); 
+            }
             
             container.innerHTML = displaySpots.map(s => createCard(s, 'showDetail')).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません💧</p>";
 
-            // ★ デバッグ修正: フィルター適用時に「マップ上のピン」も連動して表示・非表示を切り替えるように改善
             allSpots.forEach(spot => {
                 const isVisible = filterOpenOnly ? isOpen(spot) : true;
                 if (isVisible) {
@@ -478,7 +497,6 @@
                 querySnapshot.forEach(doc => {
                     const spot = doc.data();
                     spot.id = doc.id; 
-                    // ★ 承認待ち（approved: false）のものはマップ上に読み込まない（既存互換のため false 以外を許可）
                     if (spot.latitude && spot.longitude && spot.approved !== false) { 
                         addMarker(spot); 
                     }
@@ -489,10 +507,24 @@
         }
 
         map.on('moveend', updateMapVisibleList);
-        document.getElementById("sort-select").addEventListener('change', updateFullList);
+        
+        document.getElementById("sort-select").addEventListener('change', async (e) => {
+            if (e.target.value === "distance" && !userLocation) {
+                const wantGps = confirm("距離順で並び替えるには、現在地の取得が必要です。現在地を取得しますか？");
+                if (wantGps) {
+                    document.getElementById('gps-btn').click(); 
+                } else {
+                    e.target.value = "default"; 
+                }
+            } else {
+                updateFullList();
+            }
+        });
+
         document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.target.classList.toggle('active'); updateFullList(); });
         function getGPS() { return new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 })); }
 
+        // 検索ボタン (メインマップ画面)
         document.getElementById('gps-btn').addEventListener('click', async () => {
             if (!navigator.geolocation) return alert("現在地取得に対応していません。");
             const btn = document.getElementById('gps-btn'); const originalText = btn.innerHTML;
@@ -514,7 +546,6 @@
             } catch(err) { btn.innerHTML = originalText; btn.disabled = false; alert("現在地を取得できませんでした。"); }
         });
 
-        // --- ★ 追加用マップのスタイルを standard に変更 ---
         function initAddMap() {
             if (addMap) return;
             addMap = new mapboxgl.Map({ container: 'add-map', style: 'mapbox://styles/mapbox/standard', center: [139.6833, 35.6061], zoom: 16 });
@@ -533,14 +564,22 @@
             catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
         });
 
-        // --- ★ 新規スポットの追加処理 (許可制対応・即時反映バグのデバッグ完了) ---
+        // 新規スポットの追加処理
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const submitBtn = document.getElementById('submit-btn');
+            const fileInput = document.getElementById('add-image');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if (file.size > 5 * 1024 * 1024) {
+                    alert("画像サイズが大きすぎます。5MB以下の画像を選択してください。");
+                    return; 
+                }
+            }
+
             submitBtn.disabled = true;
             submitBtn.innerText = "⏳ 処理中...";
-
-            const fileInput = document.getElementById('add-image');
             let uploadedImageUrl = "";
             
             if (fileInput.files.length > 0) {
@@ -559,7 +598,6 @@
             const closedDaysArray = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
             const featuresArray = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
 
-            // ★ 許可制： approved を false として送信
             const newSpot = { 
                 name: document.getElementById('add-name').value, 
                 placename: document.getElementById('add-placename').value, 
@@ -568,18 +606,15 @@
                 available_hours: document.getElementById('add-hours').value || "24時間営業", 
                 closed_days: closedDaysArray,
                 features: featuresArray,
-                imageUrl: uploadedImageUrl,
+                imageUrl: uploadedImageUrl || null,
                 approved: false, 
                 created_at: serverTimestamp()
             };
 
             try { 
                 await addDoc(collection(db, "spots"), newSpot);
-                
                 isFormDirty = false;
-                // ★ デバッグ修正: 承認待ちのためマップには即時反映させない (addMarkerを削除)
                 alert("登録申請を受け付けました！管理者の承認後にマップに反映されます。✨");
-                
                 e.target.reset(); 
                 document.querySelector('[data-target="view-map"]').click();
             } catch (error) { 
@@ -591,12 +626,12 @@
             }
         });
 
-        // --- コメント送信処理 ---
+        // コメント送信処理
         document.getElementById('add-comment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentDetailSpotId) return;
 
-            const btn = e.target.querySelector('button[type="submit"]');
+            const btn = document.getElementById('submit-comment-btn');
             btn.disabled = true;
             btn.innerText = "送信中...";
 
@@ -604,26 +639,29 @@
             const text = document.getElementById('comment-text').value;
 
             try {
-                // サブコレクション spots/{spotId}/comments に追加
                 await addDoc(collection(db, "spots", currentDetailSpotId, "comments"), {
                     name: name,
                     text: text,
                     created_at: serverTimestamp()
                 });
                 
-                e.target.reset(); // フォームをクリア
-                await loadComments(currentDetailSpotId); // コメントを再読み込みして表示
+                e.target.reset();
+                await loadComments(currentDetailSpotId);
+
+                btn.innerText = "送信完了";
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerText = "送信する";
+                }, 3000);
 
             } catch (err) {
                 console.error("コメント送信エラー:", err);
                 alert('コメントの送信に失敗しました。');
-            } finally {
                 btn.disabled = false;
                 btn.innerText = "送信する";
             }
         });
 
-        // タブ切り替え処理
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', () => {
