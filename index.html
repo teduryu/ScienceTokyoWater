@@ -49,7 +49,6 @@
 
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         .view-section { display: none; animation: fadeIn 0.3s ease; }
-        /* スクロールバグ修正: height: 100% を削除し height: auto に */
         .view-section.active { display: block; height: auto; min-height: calc(100vh - 140px); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .section-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 16px 0; color: var(--primary); }
@@ -99,17 +98,19 @@
         .btn-danger-outline { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
 
         .controls-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-        .control-chip { background: var(--surface); padding: 10px 16px; border-radius: 30px; font-size: 0.85rem; border: 1px solid var(--border); color: var(--text-main); cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+        .control-chip { background: var(--surface); padding: 10px 16px; border-radius: 30px; font-size: 0.85rem; border: 1px solid var(--border); color: var(--text-main); cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .control-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
         select.control-chip { appearance: none; padding-right: 32px; background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" stroke="%231C1C1E" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; }
 
         form label { display: block; margin: 20px 0 8px 0; font-size: 0.9rem; color: var(--text-main); font-weight: 700; }
-        form input[type="text"], form input[type="file"], form textarea, select.form-select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--bg-base); color: var(--text-main); outline: none; }
+        form input[type="text"], form input[type="file"], form textarea, select.form-select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--bg-base); color: var(--text-main); outline: none; transition: all 0.2s; }
         form input:focus, form textarea:focus { border-color: var(--primary); background: var(--surface); }
+        /* 入力不可(disabled)のデザイン */
+        form input:disabled { background-color: var(--border); opacity: 0.6; cursor: not-allowed; color: var(--text-sub); }
         
         .input-row { display: flex; gap: 8px; }
         .checkbox-hidden { display: none; }
-        .selectable-label { display: inline-block; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); cursor: pointer; font-weight: 600; text-align: center; }
+        .selectable-label { display: inline-block; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); cursor: pointer; font-weight: 600; text-align: center; transition: all 0.2s;}
         .checkbox-hidden:checked + .selectable-label { background: var(--primary); color: white; border-color: var(--primary); }
         
         .features-grid { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -194,7 +195,9 @@
                         <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--danger)" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>
                     </div>
                 </div>
-                <button type="button" id="btn-get-location" class="btn-large btn-secondary mb-md">📍 現在地を取得</button>
+                <button type="button" id="btn-get-location" class="btn-large btn-secondary mb-md">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> 現在地を取得
+                </button>
 
                 <label>設備の特徴 (複数選択可)</label>
                 <div class="features-grid">
@@ -241,7 +244,9 @@
                 <div id="detail-meta" class="spot-meta mb-lg" style="font-size: 1rem;"></div>
                 
                 <button class="btn-large" onclick="flyToSpotFromDetail()">地図で場所を確認</button>
-                <button class="btn-large btn-danger-outline mt-md" onclick="openReportModal()">🚨 情報の修正・問題を報告</button>
+                <button class="btn-large btn-danger-outline mt-md" onclick="openReportModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> 情報の修正・問題を報告
+                </button>
             </div>
 
             <div class="divider"></div>
@@ -307,7 +312,6 @@
         }
         setTimeout(() => { map.invalidateSize(); }, 500);
 
-        // PC向け: マップ下のリストをマウスホイールで横スクロール可能に
         const scrollList = document.getElementById('map-visible-list');
         scrollList.addEventListener('wheel', (e) => {
             if(e.deltaY !== 0) { e.preventDefault(); scrollList.scrollLeft += e.deltaY; }
@@ -316,7 +320,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        // ★ query と where を新しくインポートしています
+        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -352,7 +357,26 @@
 
         document.getElementById('gps-btn').addEventListener('click', () => fetchCurrentLocation(() => { map.flyTo(userLocation, 16); updateLists(); }));
         document.getElementById('btn-get-location').addEventListener('click', () => fetchCurrentLocation(() => addMap.flyTo(userLocation, 18)));
-        document.getElementById('btn-24h').addEventListener('click', () => document.getElementById('add-hours').value = "24時間営業");
+        
+        // ★ 24時間営業ボタンの処理を修正
+        let is24hMode = false;
+        const btn24h = document.getElementById('btn-24h');
+        const inputHours = document.getElementById('add-hours');
+        btn24h.addEventListener('click', () => {
+            is24hMode = !is24hMode;
+            if (is24hMode) {
+                btn24h.classList.add('active');
+                inputHours.disabled = true;
+                inputHours.value = '';
+                inputHours.placeholder = "24時間営業";
+                inputHours.removeAttribute('required'); // disabled時はバリデーションを外す
+            } else {
+                btn24h.classList.remove('active');
+                inputHours.disabled = false;
+                inputHours.placeholder = "例: 09:00 - 18:00";
+                inputHours.setAttribute('required', 'true');
+            }
+        });
 
         window.flyToSpot = function(id) {
             const spot = allSpots.find(s => s.id === id); if (!spot) return;
@@ -411,18 +435,24 @@
 
         window.loadSpots = async function() {
             try {
-                const snap = await getDocs(collection(db, "spots"));
+                // ★ Firestoreルールの要件を満たすため、承認済み(approved == true)のみを明示的に取得
+                const q = query(collection(db, "spots"), where("approved", "==", true));
+                const snap = await getDocs(q);
+                
                 allSpots.forEach(s => { if(s.marker) map.removeLayer(s.marker); }); allSpots = [];
                 snap.forEach(doc => {
                     const spot = doc.data(); spot.id = doc.id;
-                    if (spot.latitude && spot.longitude && spot.approved !== false) {
+                    if (spot.latitude && spot.longitude) {
                         const m = L.marker([spot.latitude, spot.longitude], { icon: createCustomIcon(getPinColor(spot.features)) });
                         m.bindPopup(`<div class="custom-popup"><div class="popup-placename"><span>${escapeHTML(spot.placename)}</span></div><div class="popup-title">${escapeHTML(spot.name)}</div><button class="popup-btn" onclick="showDetail('${spot.id}')">詳細を見る</button></div>`);
                         spot.marker = m; m.addTo(map); allSpots.push(spot);
                     }
                 });
                 updateLists();
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error("データ取得エラー:", err); 
+                document.getElementById("full-spot-list").innerHTML = "<p class='text-center text-danger mt-lg'>データの読み込みに失敗しました。</p>";
+            }
         }
 
         map.on('moveend', updateLists);
@@ -439,14 +469,19 @@
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); const btn = document.getElementById('submit-btn'); btn.disabled = true; btn.innerText = "送信中...";
             try {
-                const name = document.getElementById('add-name').value; const placename = document.getElementById('add-placename').value; const floor = document.getElementById('add-floor').value; const hours = document.getElementById('add-hours').value;
+                const name = document.getElementById('add-name').value; const placename = document.getElementById('add-placename').value; const floor = document.getElementById('add-floor').value; 
+                // ★ 24時間営業の場合は値を強制的に上書き
+                const hours = is24hMode ? "24時間営業" : document.getElementById('add-hours').value;
                 const features = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
                 const closed_days = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
                 let imageUrl = null; const fileInput = document.getElementById('add-image');
                 if (fileInput.files.length > 0) { const storageRef = ref(storage, 'spots/' + Date.now() + '_' + fileInput.files[0].name); await uploadBytes(storageRef, fileInput.files[0]); imageUrl = await getDownloadURL(storageRef); }
                 await addDoc(collection(db, "spots"), { name, placename, floor, available_hours: hours, features, closed_days, latitude: addMap.currentLat, longitude: addMap.currentLng, imageUrl, approved: false, created_at: serverTimestamp() });
-                alert("申請が完了しました。管理者の承認後にマップに反映されます。"); e.target.reset(); document.querySelector('[data-target="view-map"]').click();
-            } catch (err) { alert("送信中にエラーが発生しました。"); } finally { btn.disabled = false; btn.innerText = "この内容で申請する"; }
+                alert("申請が完了しました。管理者の承認後にマップに反映されます。"); 
+                e.target.reset(); 
+                if(is24hMode) btn24h.click(); // リセット時に24時間ボタンも元に戻す
+                document.querySelector('[data-target="view-map"]').click();
+            } catch (err) { alert("送信中にエラーが発生しました。"); console.error(err); } finally { btn.disabled = false; btn.innerText = "この内容で申請する"; }
         });
 
         window.openReportModal = function() { document.getElementById('report-modal').style.display = 'flex'; }
