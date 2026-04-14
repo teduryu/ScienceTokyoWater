@@ -23,17 +23,20 @@
         }
 
         body {
-            font-family: 'Hind', 'Noto Sans JP', sans-serif; margin: 0; padding: 0;
+            font-family: 'Hind', 'Noto Sans JP', sans-serif;
+            margin: 0; padding: 0;
             background-color: var(--bg-color); color: var(--text-main);
             padding-top: 65px; padding-bottom: 90px; -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent; /* タップ時の青い枠を消す */
+            -webkit-tap-highlight-color: transparent;
         }
 
         header {
-            background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             text-align: center; padding: 16px 0; font-size: 1.25rem; font-weight: 700;
-            color: var(--science-blue); position: fixed; top: 0; left: 0; right: 0;
+            color: var(--science-blue); position: fixed; top: 0; left: 0;
+            right: 0;
             z-index: 2000; box-shadow: 0 1px 0 rgba(28, 49, 119, 0.1); letter-spacing: 0.02em;
         }
 
@@ -59,7 +62,7 @@
         
         #map-visible-list .spot-card { 
             pointer-events: auto; flex: 0 0 78%; scroll-snap-align: center; 
-            background-color: rgba(255, 255, 255, 0.98); box-shadow: 0 6px 20px rgba(28, 49, 119, 0.15); 
+            background-color: rgba(255, 255, 255, 0.98); box-shadow: 0 6px 20px rgba(28, 49, 119, 0.15);
             border: 1px solid var(--bg-darker); margin-bottom: 0; padding: 12px 16px; border-radius: 16px;
         }
         #map-visible-list .spot-title { font-size: 0.95rem; margin: 4px 0; }
@@ -84,7 +87,7 @@
         /* --- フォーム・特徴バッジ --- */
         form label { display: block; margin-top: 14px; margin-bottom: 6px; font-size: 0.85rem; color: var(--science-blue); font-weight: 700; }
         form input[type="text"], form input[type="number"], form input[type="file"] { width: 100%; padding: 12px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 1rem; background: white; }
-        form input:focus { outline: none; border-color: var(--science-blue); box-shadow: 0 0 0 2px rgba(28, 49, 119, 0.1); }
+        form input:focus, form textarea:focus { outline: none; border-color: var(--science-blue); box-shadow: 0 0 0 2px rgba(28, 49, 119, 0.1); }
         .readonly-coords { background: var(--bg-color) !important; color: var(--text-sub) !important; text-align: center; border-color: var(--bg-darker) !important; font-size: 0.8rem !important; }
 
         .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-darker); color: var(--science-blue); border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
@@ -97,18 +100,16 @@
         .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); font-size: 2.5rem; z-index: 1000; pointer-events: none; text-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.1s; }
         .center-pin.moving { transform: translate(-50%, -120%); }
 
-        /* --- 詳細ページ --- */
-        /* ★ 画像のトリミングを修正 (containに変更し背景色を設定) */
-        .detail-image { 
-            width: 100%; 
-            height: 250px; 
-            object-fit: contain; 
-            border-radius: 12px; 
-            margin-bottom: 15px; 
-            background-color: var(--bg-color); 
-            border: 1px solid var(--bg-darker);
-        }
+        /* --- 詳細ページ・コメントセクション --- */
+        .detail-image { width: 100%; height: 250px; object-fit: contain; border-radius: 12px; margin-bottom: 15px; background-color: var(--bg-color); border: 1px solid var(--bg-darker); }
         .detail-back-btn { background: none; border: none; color: var(--science-blue); font-size: 1.1rem; font-weight: bold; padding: 10px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        
+        .comment-item { background: var(--bg-color); padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--bg-darker); }
+        .comment-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .comment-name { font-size: 0.85rem; font-weight: 700; color: var(--science-blue); }
+        .comment-date { font-size: 0.75rem; color: var(--text-sub); }
+        .comment-text { font-size: 0.9rem; white-space: pre-wrap; color: var(--text-main); line-height: 1.5; }
+        #detail-comments-list { margin-bottom: 15px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
 
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0 25px 0; box-shadow: 0 -1px 10px rgba(0,0,0,0.05); z-index: 2000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: var(--science-sub); width: 33%; cursor: pointer; }
@@ -147,7 +148,8 @@
     <div class="container view-section" id="view-add">
         <h2 class="section-title">新規スポットの追加</h2>
         <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 15px;">
-            まだマップに載っていない給水スポットを見つけたら、ぜひ登録して共有してください！
+            まだマップに載っていない給水スポットを見つけたら、ぜひ登録して共有してください！<br>
+            <span style="color:var(--accent-red); font-weight:bold;">※管理者の承認後にマップに表示されます。</span>
         </p>
         
         <div class="spot-card">
@@ -195,7 +197,7 @@
                 <label>画像 (任意)</label>
                 <input type="file" id="add-image" accept="image/*">
 
-                <button type="submit" id="submit-btn" class="btn-large" style="margin-top:20px;">➕ この内容で登録する</button>
+                <button type="submit" id="submit-btn" class="btn-large" style="margin-top:20px;">➕ この内容で申請する</button>
             </form>
         </div>
     </div>
@@ -212,6 +214,17 @@
                 <div id="detail-closed" class="spot-distance" style="font-size: 1rem; margin-bottom: 10px;"></div>
                 
                 <button class="btn-large" onclick="flyToSpotFromDetail()" style="margin-top: 20px;">🗺️ 地図で見る</button>
+                
+                <div id="detail-comments-section" style="margin-top: 25px; border-top: 1px solid var(--bg-darker); padding-top: 20px;">
+                    <h3 style="font-size: 1.1rem; color: var(--science-blue); margin-bottom: 12px;">💬 コメント</h3>
+                    <div id="detail-comments-list">
+                        </div>
+                    <form id="add-comment-form" style="display: flex; flex-direction: column; gap: 10px;">
+                        <input type="text" id="comment-name" placeholder="お名前 (省略可)" style="padding: 10px; border-radius: 8px; border: 1px solid var(--science-sub); font-family: inherit; font-size: 0.95rem;">
+                        <textarea id="comment-text" required placeholder="スポットに関するコメントを入力..." style="padding: 10px; border-radius: 8px; border: 1px solid var(--science-sub); font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px;"></textarea>
+                        <button type="submit" class="btn-large" style="padding: 12px; font-size: 0.95rem; border-radius: 8px;">送信する</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -238,16 +251,15 @@
             messagingSenderId: "1039095456448",
             appId: "1:1039095456448:web:548ed9fcc01c811b470325"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
 
         // ==========================================
-        // ★ Mapboxのアクセストークンを以下に入力してください
+        // ★ Mapboxのアクセストークン
         // ==========================================
-        mapboxgl.accessToken = 'pk.eyJ1IjoidGVkdXJ1dSIsImEiOiJjbW5zd3VrZjAwZ21yMnBxeXo0bHdsbXV4In0.CrfX77lwGGqZUcecqEshMA'; 
-
+        mapboxgl.accessToken = 'pk.eyJ1IjoidGVkdXJ1dSIsImEiOiJjbW5zd3VrZjAwZ21yMnBxeXo0bHdsbXV4In0.CrfX77lwGGqZUcecqEshMA';
+        
         const map = new mapboxgl.Map({
             container: 'map', style: 'mapbox://styles/mapbox/standard',
             center: [139.6833, 35.6061], zoom: 16, pitch: 45
@@ -259,14 +271,14 @@
         let userLocation = null;
         let userMarker = null;
         let filterOpenOnly = false;
-        let previousView = 'view-map'; // 詳細ページから戻る用
+        let previousView = 'view-map'; 
         let currentDetailSpotId = null;
         
         let isFormDirty = false;
         window.onbeforeunload = () => isFormDirty ? "入力内容が破棄されますがよろしいですか？" : null;
         document.getElementById('add-spot-form').addEventListener('input', () => isFormDirty = true);
 
-        // --- ★ XSS脆弱性対策用エスケープ関数 ---
+        // XSS脆弱性対策用エスケープ関数
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
             return str.replace(/[&<>'"]/g, match => {
@@ -276,8 +288,10 @@
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180;
-            const dp = (lat2-lat1) * Math.PI/180; const dl = (lon2-lon1) * Math.PI/180;
+            const R = 6371e3;
+            const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180;
+            const dp = (lat2-lat1) * Math.PI/180;
+            const dl = (lon2-lon1) * Math.PI/180;
             const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
@@ -308,6 +322,45 @@
             return ` <span style="color:var(--accent-red); font-weight:bold;">(休: ${closed.map(d => dayNames[d]).join(',')})</span>`;
         }
 
+        // --- コメント読み込み処理 ---
+        async function loadComments(spotId) {
+            const commentsListEl = document.getElementById('detail-comments-list');
+            commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--text-sub);">コメントを読み込み中...</p>';
+            try {
+                const qSnap = await getDocs(collection(db, "spots", spotId, "comments"));
+                let comments = [];
+                qSnap.forEach(doc => comments.push(doc.data()));
+                
+                // 日付が古い順にソート（作成日時がないものは一番上）
+                comments.sort((a, b) => {
+                    const timeA = a.created_at ? a.created_at.toMillis() : 0;
+                    const timeB = b.created_at ? b.created_at.toMillis() : 0;
+                    return timeA - timeB;
+                });
+
+                if (comments.length === 0) {
+                    commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--text-sub);">まだコメントはありません。最初のコメントを書き込もう！</p>';
+                    return;
+                }
+
+                commentsListEl.innerHTML = comments.map(c => {
+                    const dateStr = c.created_at ? new Date(c.created_at.toMillis()).toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+                    return `
+                        <div class="comment-item">
+                            <div class="comment-header">
+                                <span class="comment-name">${escapeHTML(c.name) || '名無しさん'}</span>
+                                <span class="comment-date">${dateStr}</span>
+                            </div>
+                            <div class="comment-text">${escapeHTML(c.text)}</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error("コメント読み込みエラー:", err);
+                commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--accent-red);">コメントの取得に失敗しました。</p>';
+            }
+        }
+
         // --- グローバル関数の登録 ---
         window.flyToSpot = function(id) {
             const spot = allSpots.find(s => s.id === id);
@@ -318,7 +371,6 @@
         }
 
         window.showDetail = function(id) {
-            // 現在のビューを記憶（詳細ページ自身の場合は上書きしない）
             const activeView = document.querySelector('.view-section.active');
             if (activeView && activeView.id !== 'view-detail') {
                 previousView = activeView.id;
@@ -328,7 +380,6 @@
             const spot = allSpots.find(s => s.id === id);
             if (!spot) return;
             
-            // 安全にエスケープして挿入
             document.getElementById('detail-title').innerText = spot.name;
             document.getElementById('detail-placename').innerText = "📍 " + (spot.placename || "場所未設定");
             document.getElementById('detail-hours').innerText = "🕒 " + (spot.available_hours || "24時間営業");
@@ -341,6 +392,9 @@
             const featuresEl = document.getElementById('detail-features');
             featuresEl.innerHTML = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
             
+            // コメントの読み込みを実行
+            loadComments(id);
+            
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
             document.getElementById('view-detail').classList.add('active');
             window.scrollTo(0, 0);
@@ -349,14 +403,13 @@
         window.goBack = function() { document.querySelector(`[data-target="${previousView}"]`).click(); }
         window.flyToSpotFromDetail = function() { if (currentDetailSpotId) flyToSpot(currentDetailSpotId); }
 
-        // --- ★ リストとマップでタップ時の動作を分けるように変更 ---
         function createCard(spot, onClickAction) {
             const openStatus = isOpen(spot);
             const distText = spot.distance ? `📏 ${formatDistance(spot.distance)}<br>` : "";
             const closedText = getClosedDaysText(spot.closed_days);
             const featuresHtml = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
             const imgIcon = spot.imageUrl ? ` <span style="font-size:0.8rem;">📸</span>` : '';
-            const safeHours = escapeHTML(spot.available_hours) || "24時間営業"; // ★ 空欄のデフォルト表示修正
+            const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
 
             return `
                 <div class="spot-card clickable-card" onclick="${onClickAction}('${spot.id}')">
@@ -373,7 +426,6 @@
             const container = document.getElementById("map-visible-list");
             const bounds = map.getBounds();
             const visibleSpots = allSpots.filter(s => bounds.contains([s.longitude, s.latitude]));
-            // ★ マップ下部のリストはタップでマップ上のフォーカス（flyToSpot）
             container.innerHTML = visibleSpots.length > 0 ? visibleSpots.map(s => createCard(s, 'flyToSpot')).join('') : `<div class="empty-message-pill">このエリアには給水スポットがありません💧</div>`;
         }
 
@@ -385,7 +437,7 @@
             if (filterOpenOnly) displaySpots = displaySpots.filter(s => isOpen(s));
             if (sortBy === "distance" && userLocation) { displaySpots.sort((a, b) => a.distance - b.distance); }
             else { displaySpots.sort((a, b) => a.name.localeCompare(b.name, 'ja')); }
-            // ★ リスト画面からはタップで直接詳細ページへ（showDetail）
+            
             container.innerHTML = displaySpots.map(s => createCard(s, 'showDetail')).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません💧</p>";
         }
 
@@ -393,7 +445,6 @@
             const safePlacename = escapeHTML(spot.placename) || "場所未設定";
             const safeName = escapeHTML(spot.name);
             const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
-            
             const popupHtml = `
                 <div style="font-size:0.85em; color:var(--science-sub); margin-bottom:2px;">📍 ${safePlacename}</div>
                 <b style="font-size:1.1em; color:var(--science-blue);">${safeName}</b><br>
@@ -413,7 +464,10 @@
                 querySnapshot.forEach(doc => {
                     const spot = doc.data();
                     spot.id = doc.id; 
-                    if (spot.latitude && spot.longitude) { addMarker(spot); }
+                    // ★ 承認待ち（approved: false）のものはマップ上に読み込まない
+                    if (spot.latitude && spot.longitude && spot.approved !== false) { 
+                        addMarker(spot); 
+                    }
                 });
                 updateMapVisibleList();
                 updateFullList();
@@ -423,7 +477,6 @@
         map.on('moveend', updateMapVisibleList);
         document.getElementById("sort-select").addEventListener('change', updateFullList);
         document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.target.classList.toggle('active'); updateFullList(); });
-
         function getGPS() { return new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 })); }
 
         document.getElementById('gps-btn').addEventListener('click', async () => {
@@ -447,10 +500,12 @@
             } catch(err) { btn.innerHTML = originalText; btn.disabled = false; alert("現在地を取得できませんでした。"); }
         });
 
+        // --- ★ 追加用マップのスタイルを standard に変更 ---
         function initAddMap() {
             if (addMap) return;
-            addMap = new mapboxgl.Map({ container: 'add-map', style: 'mapbox://styles/mapbox/streets-v12', center: [139.6833, 35.6061], zoom: 16 });
-            const pinEl = document.getElementById('center-pin'); const latInput = document.getElementById('add-lat'); const lngInput = document.getElementById('add-lng');
+            addMap = new mapboxgl.Map({ container: 'add-map', style: 'mapbox://styles/mapbox/standard', center: [139.6833, 35.6061], zoom: 16 });
+            const pinEl = document.getElementById('center-pin');
+            const latInput = document.getElementById('add-lat'); const lngInput = document.getElementById('add-lng');
             addMap.on('movestart', () => pinEl.classList.add('moving'));
             addMap.on('move', () => { const center = addMap.getCenter(); latInput.value = center.lat.toFixed(6); lngInput.value = center.lng.toFixed(6); });
             addMap.on('moveend', () => pinEl.classList.remove('moving'));
@@ -464,6 +519,7 @@
             catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
         });
 
+        // --- 新規スポットの追加処理 (許可制対応) ---
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const submitBtn = document.getElementById('submit-btn');
@@ -485,45 +541,76 @@
                     alert("画像のアップロードに失敗しました。画像なしで登録を続行します。");
                 }
             }
-            submitBtn.innerText = "⏳ データ登録中...";
-
+            submitBtn.innerText = "⏳ データ送信中...";
             const closedDaysArray = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
             const featuresArray = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
 
+            [span_0](start_span)// ★ 許可制： approved を false として送信[span_0](end_span)
             const newSpot = { 
                 name: document.getElementById('add-name').value, 
                 placename: document.getElementById('add-placename').value, 
                 latitude: parseFloat(document.getElementById('add-lat').value), 
                 longitude: parseFloat(document.getElementById('add-lng').value), 
-                available_hours: document.getElementById('add-hours').value || "24時間営業", // ★デフォルト値変更
+                available_hours: document.getElementById('add-hours').value || "24時間営業", 
                 closed_days: closedDaysArray,
                 features: featuresArray,
                 imageUrl: uploadedImageUrl,
+                approved: false, 
                 created_at: serverTimestamp()
             };
 
             try { 
-                const docRef = await addDoc(collection(db, "spots"), newSpot); 
-                newSpot.id = docRef.id; 
+                await addDoc(collection(db, "spots"), newSpot);
                 
                 isFormDirty = false;
-                addMarker(newSpot); 
-                updateMapVisibleList();
-                updateFullList();
+                // ★ 承認待ちのためマップには即時反映させない
+                [span_1](start_span)alert("登録申請を受け付けました！管理者の承認後にマップに反映されます。✨");[span_1](end_span)
                 
-                alert("新しい給水スポットを登録しました！ご協力ありがとうございます✨"); 
                 e.target.reset(); 
-                document.querySelector('[data-target="view-map"]').click(); 
-                map.flyTo({ center: [newSpot.longitude, newSpot.latitude], zoom: 18, speed: 1.5 });
-                setTimeout(() => newSpot.marker.togglePopup(), 800);
+                document.querySelector('[data-target="view-map"]').click();
+                [span_2](start_span)// マップへのズーム機能は承認待ちデータのため削除[span_2](end_span)
             } catch (error) { 
-                console.error("エラー:", error); alert("登録に失敗しました。"); 
+                console.error("エラー:", error);
+                alert("登録に失敗しました。"); 
             } finally {
-                submitBtn.disabled = false; submitBtn.innerText = "➕ この内容で登録する"; 
+                submitBtn.disabled = false;
+                submitBtn.innerText = "➕ この内容で申請する"; 
             }
         });
 
-        // タブ切り替え
+        // --- コメント送信処理 ---
+        document.getElementById('add-comment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentDetailSpotId) return;
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "送信中...";
+
+            const name = document.getElementById('comment-name').value;
+            const text = document.getElementById('comment-text').value;
+
+            try {
+                // サブコレクション spots/{spotId}/comments に追加
+                await addDoc(collection(db, "spots", currentDetailSpotId, "comments"), {
+                    name: name,
+                    text: text,
+                    created_at: serverTimestamp()
+                });
+                
+                e.target.reset(); // フォームをクリア
+                await loadComments(currentDetailSpotId); // コメントを再読み込みして表示
+
+            } catch (err) {
+                console.error("コメント送信エラー:", err);
+                alert('コメントの送信に失敗しました。');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "送信する";
+            }
+        });
+
+        // タブ切り替え処理
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', () => {
@@ -532,8 +619,6 @@
                 document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
                 
                 const targetId = item.dataset.target;
-                
-                // 詳細ページ以外を開いたときは履歴(previousView)を更新
                 if (targetId !== 'view-detail') {
                     previousView = targetId;
                 }
