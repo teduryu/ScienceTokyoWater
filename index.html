@@ -20,7 +20,6 @@
             --science-blue: #1c3177; --science-sub: #7f96c2; --bg-color: #f2f4f9;
             --bg-darker: #e8eaf1; --accent-red: #f02b2b; --accent-green: #2b9e4a;
             --card-bg: #FFFFFF; --text-main: #222222; --text-sub: #707070;
-            /* ピンのカラーパレット */
             --pin-hot: #f02b2b; --pin-machine: #1c3177; --pin-tap: #00a8ff; --pin-default: #7f96c2;
         }
 
@@ -58,13 +57,14 @@
         .popup-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 600; display: flex; gap:4px; align-items: center; }
         .popup-floor { background: var(--bg-color); padding: 1px 4px; border-radius: 4px; font-size: 0.65rem; color: var(--science-blue); font-weight: 700; border: 1px solid var(--bg-darker); }
         .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--science-blue); line-height: 1.3; margin-bottom: 2px; }
-        .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; margin-top: 6px; }
+        .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 8px; border-radius: 8px; cursor: pointer; transition: background 0.2s; font-size: 0.85rem; margin-top: 6px; }
+        .popup-btn:active { background: var(--bg-darker); }
 
         .custom-pin { filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); display: flex; align-items: center; justify-content: center; }
         .custom-pin svg { width: 100%; height: 100%; }
 
         .floating-ui-top { position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
-        .floating-btn { width: auto; padding: 8px 18px; font-size: 0.85rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; pointer-events: auto; font-weight: 700; display: flex; align-items: center; gap: 6px; background: var(--science-blue); color: white; border: none; cursor: pointer;}
+        .floating-btn { width: auto; padding: 8px 18px; font-size: 0.85rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; pointer-events: auto; font-weight: 700; display: flex; align-items: center; gap: 6px; background: var(--science-blue); color: white; border: none; cursor: pointer; transition: background 0.2s;}
         
         .floating-ui-bottom { position: absolute; bottom: calc(65px + env(safe-area-inset-bottom)); left: 0; width: 100%; z-index: 1000; pointer-events: none; }
 
@@ -74,20 +74,21 @@
         
         .empty-message-pill { pointer-events: auto; background: rgba(255,255,255,0.98); padding: 12px 24px; border-radius: 30px; margin: 0 auto; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); box-shadow: 0 8px 20px rgba(28, 49, 119, 0.1); border: 1px solid var(--bg-darker); }
 
-        .btn-large { pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--science-blue); color: white; border: none; padding: 12px; font-size: 0.95rem; border-radius: 50px; cursor: pointer; font-weight: 700; font-family: inherit; transition: all 0.2s; }
-        .btn-large:active { transform: scale(0.98); }
+        /* バウンスアニメーション(transform)を削除 */
+        .btn-large { pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--science-blue); color: white; border: none; padding: 12px; font-size: 0.95rem; border-radius: 50px; cursor: pointer; font-weight: 700; font-family: inherit; transition: background 0.2s; }
+        .btn-large:active { background: #15265b; }
         .btn-large:disabled { background: var(--science-sub); cursor: not-allowed; }
         .btn-secondary { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); box-shadow: none; }
 
         .controls { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .control-item { background: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+        .control-item { background: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 500; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .control-item.active { background: var(--science-blue); color: white; border-color: var(--science-blue); }
 
         .section-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; color: var(--science-blue); }
 
-        /* --- スポットカード --- */
-        .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(28, 49, 119, 0.04); position: relative; border: 1px solid var(--bg-darker); cursor: pointer; }
-        .spot-card:active { transform: scale(0.98); }
+        /* スポットカードのバウンス削除 */
+        .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(28, 49, 119, 0.04); position: relative; border: 1px solid var(--bg-darker); cursor: pointer; transition: background-color 0.2s;}
+        .spot-card:active { background-color: #f8fafc; }
         .spot-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
         .dist-badge { background: var(--bg-darker); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--science-blue); }
         .closed-days { color: var(--accent-red); font-weight: 600; font-size: 0.85em; margin-left: 4px; }
@@ -110,8 +111,8 @@
 
         .days-grid { display: flex; flex-wrap: nowrap; gap: 4px; margin-bottom: 10px; width: 100%; justify-content: space-between; }
         .day-checkbox { display: none; }
-        .day-label { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px 0; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 8px; font-size: 0.8rem; color: var(--text-sub); cursor: pointer; font-weight: 500; }
-        .day-checkbox:checked + .day-label { background: var(--science-blue); color: white; border-color: var(--science-blue); }
+        .day-label { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px 0; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 8px; font-size: 0.8rem; color: var(--text-sub); cursor: pointer; font-weight: 500; transition: all 0.2s;}
+        .day-checkbox:checked + .day-label { background: var(--science-blue); color: white; border-color: var(--science-blue); box-shadow: 0 2px 6px rgba(28,49,119,0.2); }
 
         .add-map-container { position: relative; height: 180px; width: 100%; border-radius: 12px; overflow: hidden; border: 2px solid var(--science-sub); margin-bottom: 8px; }
         .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); transition: transform 0.1s; }
@@ -119,7 +120,8 @@
 
         /* --- 詳細ページ --- */
         .detail-image { width: 100%; height: 220px; object-fit: contain; border-radius: 12px; margin-bottom: 15px; background-color: var(--bg-color); border: 1px solid var(--bg-darker); }
-        .detail-back-btn { background: none; border: none; color: var(--science-sub); font-size: 1rem; font-weight: bold; padding: 8px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .detail-back-btn { background: none; border: none; color: var(--science-sub); font-size: 1rem; font-weight: bold; padding: 8px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: color 0.2s; }
+        .detail-back-btn:active { color: var(--science-blue); }
 
         .comment-item { background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--bg-darker); }
         .comment-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
@@ -138,7 +140,7 @@
         .nav-item.active { color: var(--science-blue); }
         .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
 
-        /* --- PWAプロンプト --- */
+        /* PWAプロンプト */
         #pwa-prompt {
             display: none; position: fixed; bottom: calc(75px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 350px; background: white; border-radius: 12px; padding: 16px;
@@ -292,11 +294,40 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    
+
+    <script>
+        // 1. メインマップの初期化 (Tracestrack URL修正済み)
+        const map = L.map('map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
+        L.tileLayer('https://tile.tracestrack.com/topo/{z}/{x}/{y}.png?key=90a553379864e20e19961ae3de49ccc7', {
+            maxZoom: 19, attribution: '&copy; OpenStreetMap contributors, Tiles &copy; Tracestrack'
+        }).addTo(map);
+
+        // 2. 追加用マップの初期化
+        let addMap = null;
+        function initAddMap() {
+            if (addMap) return;
+            addMap = L.map('add-map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
+            L.tileLayer('https://tile.tracestrack.com/topo/{z}/{x}/{y}.png?key=90a553379864e20e19961ae3de49ccc7', { maxZoom: 19 }).addTo(addMap);
+            
+            const pinEl = document.getElementById('center-pin');
+            const latInput = document.getElementById('add-lat'); 
+            const lngInput = document.getElementById('add-lng');
+            
+            addMap.on('movestart', () => pinEl.classList.add('moving'));
+            addMap.on('move', () => { const center = addMap.getCenter(); latInput.value = center.lat.toFixed(6); lngInput.value = center.lng.toFixed(6); });
+            addMap.on('moveend', () => pinEl.classList.remove('moving'));
+            latInput.value = "35.606100"; lngInput.value = "139.683300";
+        }
+        
+        // 初回のみ少し遅らせてサイズを計算し直す（グレーになる問題対策）
+        setTimeout(() => { map.invalidateSize(); }, 500);
+    </script>
+
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }</script>
+
     <script type="module">
-        // ★ Firebaseモジュールの完全かつ正確なインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -309,20 +340,7 @@
         };
         
         const app = initializeApp(firebaseConfig);
-        let db;
-        
-        // ★ 致命的エラー防止用：初期化のフォールバック機構
-        try {
-            // 正しい手法でオフラインキャッシュ付きのFirestoreを初期化
-            db = initializeFirestore(app, {
-                localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
-            });
-        } catch (e) {
-            console.warn("オフラインモードの初期化に失敗したため、標準モードで起動します。", e);
-            // 失敗した場合は標準のFirestoreを呼び出す
-            db = getFirestore(app);
-        }
-        
+        const db = getFirestore(app); // エラーの原因となる複雑なオフライン設定を削除した標準版
         const storage = getStorage(app);
 
         // --- PWA プロンプト制御 ---
@@ -341,16 +359,10 @@
             }
         });
 
-        // --- マップ初期化 ---
-        const map = L.map('map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
-        L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png?key=90a553379864e20e19961ae3de49ccc7', {
-            maxZoom: 19, attribution: '&copy; OpenStreetMap contributors, Tiles &copy; Tracestrack'
-        }).addTo(map);
-
-        let addMap = null; let allSpots = []; let userLocation = null; let userMarker = null;
+        let allSpots = []; let userLocation = null; let userMarker = null;
         let filterOpenOnly = false; let previousView = 'view-map'; let currentDetailSpotId = null;
 
-        // ★ 24時間ボタン
+        // 24時間ボタン
         let is24h = false;
         document.getElementById('btn-24h').addEventListener('click', (e) => {
             is24h = !is24h; const input = document.getElementById('add-hours');
@@ -525,7 +537,7 @@
             const floorBadge = spot.floor ? `<span class="popup-floor">${escapeHTML(spot.floor)}</span>` : "";
 
             return `
-                <div class="spot-card" onclick="${onClickAction}('${spot.id}')">
+                <div class="spot-card clickable-card" onclick="${onClickAction}('${spot.id}')">
                     <span class="status-badge ${openStatus ? 'status-open' : 'status-closed'}">${openStatus ? '営業中' : '時間外'}</span>
                     <div class="popup-placename" style="margin-bottom:4px;">${escapeHTML(spot.placename) || "場所未設定"} ${floorBadge}</div>
                     <div class="spot-title">${escapeHTML(spot.name)} ${imgIcon}</div>
@@ -604,7 +616,7 @@
                 updateFullList();
             } catch (error) { 
                 console.error("データ読み込み失敗:", error); 
-                document.getElementById("full-spot-list").innerHTML = `<p style="text-align: center; color: var(--accent-red); font-size: 0.9rem;">データの読み込みに失敗しました。<br>通信環境を確認して再読み込みしてください。</p>`;
+                document.getElementById("full-spot-list").innerHTML = `<p style="text-align: center; color: var(--accent-red); font-size: 0.9rem;">データの読み込みに失敗しました。</p>`;
             }
         }
 
@@ -671,22 +683,6 @@
             } catch(err) { console.error("GPS取得後のUI処理エラー:", err); }
         });
 
-        // --- 追加用マップ ---
-        function initAddMap() {
-            if (addMap) return;
-            addMap = L.map('add-map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
-            L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png?key=90a553379864e20e19961ae3de49ccc7', { maxZoom: 19 }).addTo(addMap);
-            
-            const pinEl = document.getElementById('center-pin');
-            const latInput = document.getElementById('add-lat'); 
-            const lngInput = document.getElementById('add-lng');
-            
-            addMap.on('movestart', () => pinEl.classList.add('moving'));
-            addMap.on('move', () => { const center = addMap.getCenter(); latInput.value = center.lat.toFixed(6); lngInput.value = center.lng.toFixed(6); });
-            addMap.on('moveend', () => pinEl.classList.remove('moving'));
-            latInput.value = "35.606100"; lngInput.value = "139.683300";
-        }
-
         document.getElementById('btn-get-location').addEventListener('click', async () => {
             const btn = document.getElementById('btn-get-location'); const originalText = btn.innerHTML;
             btn.innerHTML = "取得中..."; btn.disabled = true;
@@ -697,6 +693,10 @@
             } 
             catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
         });
+
+        let isFormDirty = false;
+        window.onbeforeunload = () => isFormDirty ? "入力内容が破棄されますがよろしいですか？" : null;
+        document.getElementById('add-spot-form').addEventListener('input', () => isFormDirty = true);
 
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); 
@@ -716,7 +716,7 @@
             
             if (fileInput.files.length > 0) {
                 try {
-                    submitBtn.innerText = "画像を圧縮・アップロード中...";
+                    submitBtn.innerText = "画像圧縮中...";
                     const originalFile = fileInput.files[0];
                     const compressedBlob = await compressImage(originalFile, 1200); 
                     
@@ -799,7 +799,6 @@
             });
         });
 
-        // アプリ起動時にデータを読み込む
         loadSpots();
     </script>
 </body>
