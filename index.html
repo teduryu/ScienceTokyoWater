@@ -56,7 +56,7 @@
         #map { width: 100%; height: 100%; z-index: 1; }
         .leaflet-top { top: 65px !important; }
         
-        /* ★ Leaflet ポップアップのコンパクト化・洗練 */
+        /* ポップアップのコンパクト化 */
         .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(28,49,119,0.15); }
         .leaflet-popup-content { margin: 14px; font-family: 'Hind', 'Noto Sans JP', sans-serif; width: 200px !important; }
         .leaflet-container a.leaflet-popup-close-button { color: var(--text-sub); top: 8px; right: 8px; font-size: 1.2rem; }
@@ -302,9 +302,9 @@
     <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }</script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg",
@@ -320,12 +320,11 @@
         const storage = getStorage(app);
 
         // ==========================================
-        // ★ Leaflet + Tracestrack Maps (OSM) の初期化
+        // ★修正：地図タイルをTracestrack Maps (APIキー付き) に変更
         // ==========================================
         const map = L.map('map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
         
-        // Tracestrack Topo タイルを読み込み
-        L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png', {
+        L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png?key=90a553379864e20e19961ae3de49ccc7', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles &copy; Tracestrack'
         }).addTo(map);
@@ -355,7 +354,6 @@
             });
         }
 
-        // Leafletは [lat, lng] 形式なので計算関数の引数順に注意
         function getDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
             const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180;
@@ -433,7 +431,6 @@
             const spot = allSpots.find(s => s.id === id);
             if (!spot) return;
             document.querySelector('[data-target="view-map"]').click();
-            // LeafletのflyToは [lat, lng]
             map.flyTo([spot.latitude, spot.longitude], 18, { animate: true, duration: 1.5 });
             setTimeout(() => { spot.marker.openPopup(); }, 1600);
         }
@@ -494,7 +491,6 @@
         function updateMapVisibleList() {
             const container = document.getElementById("map-visible-list");
             const bounds = map.getBounds();
-            // Leafletの bounds.contains は [lat, lng] (L.latLng)
             const visibleSpots = allSpots.filter(s => bounds.contains(L.latLng(s.latitude, s.longitude)));
             container.innerHTML = visibleSpots.length > 0 ? visibleSpots.map(s => createCard(s, 'flyToSpot')).join('') : `<div class="empty-message-pill">このエリアに見つかりませんでした</div>`;
         }
@@ -515,7 +511,6 @@
             
             container.innerHTML = displaySpots.map(s => createCard(s, 'showDetail')).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません</p>";
 
-            // Leafletでの表示・非表示コントロール
             allSpots.forEach(spot => {
                 const isVisible = filterOpenOnly ? isOpen(spot) : true;
                 if (isVisible) {
@@ -531,7 +526,6 @@
             const safeName = escapeHTML(spot.name);
             const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
             
-            // ★ 洗練されたLeafletポップアップHTML
             const popupHtml = `
                 <div class="custom-popup">
                     <div class="popup-placename">${safePlacename}</div>
@@ -574,13 +568,11 @@
 
         document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.currentTarget.classList.toggle('active'); updateFullList(); });
         
-        // --- ★ GPSの堅牢化（フォールバック機能の実装） ---
         function getGPS() { 
             return new Promise((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, 
                     (err) => {
                         console.warn("高精度GPS取得失敗、低精度に切り替えます:", err);
-                        // 高精度が失敗した場合、タイムアウトを伸ばして低精度で再トライ
                         navigator.geolocation.getCurrentPosition(resolve, reject, {
                             enableHighAccuracy: false, timeout: 10000, maximumAge: 60000
                         });
@@ -590,7 +582,6 @@
             }); 
         }
 
-        // --- ★ GPS即時失敗バグの修正（取得とUI更新の分離） ---
         document.getElementById('gps-btn').addEventListener('click', async () => {
             if (!navigator.geolocation) return alert("現在地取得に対応していません。");
             const btn = document.getElementById('gps-btn'); 
@@ -600,20 +591,18 @@
 
             let pos;
             try {
-                // ここでは純粋に位置情報の取得のみを行う
                 pos = await getGPS();
             } catch(err) { 
                 btn.innerHTML = originalHTML; 
                 btn.disabled = false; 
                 alert("現在地の取得に失敗しました。端末の位置情報サービスがオンになっているか確認してください。");
-                return; // 失敗した場合はここで処理を打ち切る
+                return; 
             }
 
-            // GPS取得に成功した後のUI更新処理
             try {
                 btn.innerHTML = originalHTML; 
                 btn.disabled = false;
-                userLocation = [pos.coords.latitude, pos.coords.longitude]; // Leafletは [lat, lng]
+                userLocation = [pos.coords.latitude, pos.coords.longitude]; 
                 
                 if (userMarker) {
                     map.removeLayer(userMarker);
@@ -639,11 +628,12 @@
             }
         });
 
-        // --- 追加用マップ (Leaflet + Tracestrack) ---
+        // --- 追加用マップ ---
+        // ★修正：追加用マップのタイルもTracestrack Mapsに変更
         function initAddMap() {
             if (addMap) return;
             addMap = L.map('add-map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
-            L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(addMap);
+            L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png?key=90a553379864e20e19961ae3de49ccc7', { maxZoom: 19 }).addTo(addMap);
             
             const pinEl = document.getElementById('center-pin');
             const latInput = document.getElementById('add-lat'); 
@@ -669,7 +659,6 @@
             catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
         });
 
-        // 新規スポットの追加処理
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const submitBtn = document.getElementById('submit-btn');
@@ -731,7 +720,6 @@
             }
         });
 
-        // コメント送信処理
         document.getElementById('add-comment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentDetailSpotId) return;
