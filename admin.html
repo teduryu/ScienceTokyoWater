@@ -10,7 +10,7 @@
         body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 800px; }
         .card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        h1, h2 { color: var(--primary); margin-top: 0; }
+        h1, h2 { color: var(--primary); margin-top: 0; display: flex; align-items: center; }
         .btn { padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; background: var(--primary); }
         .btn-success { background: var(--success); } .btn-danger { background: var(--danger); }
         .flex { display: flex; gap: 10px; margin-top: 10px; }
@@ -28,7 +28,7 @@
     </div>
 
     <div class="container">
-        <h1>👑 管理者ダッシュボード</h1>
+        <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> 管理者ダッシュボード</h1>
         <p class="text-sub">未承認スポットの審査と、ユーザーからの報告への対応を行います。</p>
 
         <div class="card">
@@ -46,7 +46,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // 本番環境では環境変数などから安全に読み込むことを推奨します
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg", authDomain: "sciencetokyowater.firebaseapp.com",
             projectId: "sciencetokyowater", storageBucket: "sciencetokyowater.firebasestorage.app",
@@ -70,7 +69,6 @@
             const rDiv = document.getElementById('admin-reports-list');
             
             try {
-                // 未承認スポットの取得
                 const snap = await getDocs(collection(db, "spots"));
                 let unapp = []; let allSpotsMap = {};
                 snap.forEach(d => { 
@@ -91,7 +89,6 @@
                     </div>
                 `).join('') : "<p style='color:var(--text-sub);'>承認待ちのスポットはありません。</p>";
                 
-                // 報告の取得
                 const rSnap = await getDocs(collection(db, "reports"));
                 let reps = [];
                 rSnap.forEach(d => { const dt = d.data(); if(!dt.resolved) reps.push({id: d.id, ...dt}); });
