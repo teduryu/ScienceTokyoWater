@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
     <style>
@@ -19,6 +20,7 @@
             --science-blue: #1c3177; --science-sub: #7f96c2; --bg-color: #f2f4f9;
             --bg-darker: #e8eaf1; --accent-red: #f02b2b; --accent-green: #2b9e4a;
             --card-bg: #FFFFFF; --text-main: #222222; --text-sub: #707070;
+            /* ピンのカラーパレット */
             --pin-hot: #f02b2b; --pin-machine: #1c3177; --pin-tap: #00a8ff; --pin-default: #7f96c2;
         }
 
@@ -58,7 +60,6 @@
         .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--science-blue); line-height: 1.3; margin-bottom: 2px; }
         .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; margin-top: 6px; }
 
-        /* ★ カスタムピンデザイン */
         .custom-pin { filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); display: flex; align-items: center; justify-content: center; }
         .custom-pin svg { width: 100%; height: 100%; }
 
@@ -98,13 +99,13 @@
         form label { display: block; margin-top: 14px; margin-bottom: 6px; font-size: 0.85rem; color: var(--science-blue); font-weight: 700; }
         form input[type="text"], form input[type="file"], form textarea { width: 100%; padding: 10px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 0.95rem; background: white; transition: all 0.2s; }
         form input:focus, form textarea:focus { outline: none; border-color: var(--science-blue); box-shadow: 0 0 0 2px rgba(28, 49, 119, 0.1); }
-        form input:disabled { background-color: var(--bg-darker); color: var(--text-sub); opacity: 0.7; }
+        form input:disabled { background-color: var(--bg-darker); color: var(--text-sub); opacity: 0.7; border-color: var(--bg-darker); cursor: not-allowed; }
         .input-group { display: flex; gap: 8px; }
 
         .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-color); color: var(--science-sub); border: 1px solid var(--bg-darker); border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
         .feature-checkbox { display: none; }
         .feature-label { display: inline-block; padding: 6px 10px; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 8px; font-size: 0.85rem; color: var(--text-sub); cursor: pointer; transition: all 0.2s; font-weight: 500; }
-        .feature-checkbox:checked + .feature-label { background: var(--science-blue); color: white; border-color: var(--science-blue); }
+        .feature-checkbox:checked + .feature-label { background: var(--science-blue); color: white; border-color: var(--science-blue); box-shadow: 0 2px 6px rgba(28,49,119,0.2); }
         .features-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 
         .days-grid { display: flex; flex-wrap: nowrap; gap: 4px; margin-bottom: 10px; width: 100%; justify-content: space-between; }
@@ -137,7 +138,7 @@
         .nav-item.active { color: var(--science-blue); }
         .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
 
-        /* ★ PWAインストールプロンプト */
+        /* --- PWAプロンプト --- */
         #pwa-prompt {
             display: none; position: fixed; bottom: calc(75px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 350px; background: white; border-radius: 12px; padding: 16px;
@@ -201,7 +202,7 @@
                 <label>建物名・エリア と 階数 (必須)</label>
                 <div class="input-group">
                     <input type="text" id="add-placename" required placeholder="建物名 (例: 本館)" style="flex: 2;">
-                    <input type="text" id="add-floor" required placeholder="階数 (例: 3階)" style="flex: 1;">
+                    <input type="text" id="add-floor" placeholder="階数 (例: 3階)" style="flex: 1;">
                 </div>
 
                 <label>場所の指定 (地図を動かしてピンを合わせる)</label>
@@ -291,12 +292,11 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }</script>
-
+    
     <script type="module">
-        // ★ オフラインキャッシュ機能をインポート
+        // ★ Firebaseモジュールの完全かつ正確なインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -309,10 +309,20 @@
         };
         
         const app = initializeApp(firebaseConfig);
-        // ★ オフラインモード（ローカルキャッシュ）の有効化
-        const db = getFirestore(app, {
-            localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
-        });
+        let db;
+        
+        // ★ 致命的エラー防止用：初期化のフォールバック機構
+        try {
+            // 正しい手法でオフラインキャッシュ付きのFirestoreを初期化
+            db = initializeFirestore(app, {
+                localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+            });
+        } catch (e) {
+            console.warn("オフラインモードの初期化に失敗したため、標準モードで起動します。", e);
+            // 失敗した場合は標準のFirestoreを呼び出す
+            db = getFirestore(app);
+        }
+        
         const storage = getStorage(app);
 
         // --- PWA プロンプト制御 ---
@@ -320,10 +330,7 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // 数秒後にプロンプトを表示（ユーザーの邪魔にならないように）
-            setTimeout(() => {
-                document.getElementById('pwa-prompt').classList.add('show');
-            }, 3000);
+            setTimeout(() => { document.getElementById('pwa-prompt').classList.add('show'); }, 3000);
         });
         document.getElementById('btn-install-pwa').addEventListener('click', async () => {
             if (deferredPrompt) {
@@ -393,27 +400,19 @@
             return `<span class="closed-days">休: ${closed.map(d => dayNames[d]).join(',')}</span>`;
         }
 
-        // --- ★ 特徴ごとのピンカラー生成関数 ---
         function getPinColor(features) {
-            if (!features) return "var(--pin-default)";
+            if (!features || !Array.isArray(features)) return "var(--pin-default)";
             if (features.includes("お湯")) return "var(--pin-hot)";
             if (features.includes("給水機")) return "var(--pin-machine)";
             if (features.includes("蛇口")) return "var(--pin-tap)";
-            return "var(--pin-default)"; // デフォルト
+            return "var(--pin-default)"; 
         }
 
         function createCustomIcon(color) {
             const svg = `<svg viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>`;
-            return L.divIcon({
-                className: 'custom-pin',
-                html: svg,
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-                popupAnchor: [0, -32]
-            });
+            return L.divIcon({ className: 'custom-pin', html: svg, iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
         }
 
-        // --- ★ 画像のクライアント側圧縮関数 ---
         async function compressImage(file, maxSize = 1200) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -422,15 +421,11 @@
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         let width = img.width; let height = img.height;
-                        if (width > height) {
-                            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
-                        } else {
-                            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
-                        }
+                        if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+                        } else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } }
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        // 80%の品質のJPEGに圧縮
                         canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
                     };
                     img.src = event.target.result;
@@ -495,7 +490,6 @@
             
             document.getElementById('detail-title').innerText = spot.name;
             
-            // 階数の表示対応
             let placeHtml = `<span>${escapeHTML(spot.placename) || "場所未設定"}</span>`;
             if (spot.floor) { placeHtml += `<span class="popup-floor">${escapeHTML(spot.floor)}</span>`; }
             document.getElementById('detail-placename').innerHTML = placeHtml;
@@ -509,7 +503,7 @@
             else { imgEl.style.display = 'none'; }
             
             const featuresEl = document.getElementById('detail-features');
-            featuresEl.innerHTML = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
+            featuresEl.innerHTML = (Array.isArray(spot.features) ? spot.features : []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
             
             loadComments(id);
             
@@ -525,7 +519,7 @@
             const openStatus = isOpen(spot);
             const distText = spot.distance ? `<span class="dist-badge">${formatDistance(spot.distance)}</span>` : "";
             const closedText = getClosedDaysText(spot.closed_days);
-            const featuresHtml = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
+            const featuresHtml = (Array.isArray(spot.features) ? spot.features : []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
             const imgIcon = spot.imageUrl ? `<svg style="width:14px;height:14px;color:var(--science-sub);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>` : '';
             const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
             const floorBadge = spot.floor ? `<span class="popup-floor">${escapeHTML(spot.floor)}</span>` : "";
@@ -587,7 +581,6 @@
                     <button class="popup-btn" onclick="showDetail('${spot.id}')">詳細を見る</button>
                 </div>
             `;
-            // ★ 特徴に応じてピンの色を変更
             const pinColor = getPinColor(spot.features);
             const marker = L.marker([spot.latitude, spot.longitude], { icon: createCustomIcon(pinColor) }).addTo(map);
             
@@ -609,7 +602,10 @@
                 });
                 updateMapVisibleList();
                 updateFullList();
-            } catch (error) { console.error("データ読み込み失敗:", error); }
+            } catch (error) { 
+                console.error("データ読み込み失敗:", error); 
+                document.getElementById("full-spot-list").innerHTML = `<p style="text-align: center; color: var(--accent-red); font-size: 0.9rem;">データの読み込みに失敗しました。<br>通信環境を確認して再読み込みしてください。</p>`;
+            }
         }
 
         map.on('moveend', updateMapVisibleList);
@@ -648,8 +644,7 @@
             try { pos = await getGPS(); } 
             catch(err) { 
                 btn.innerHTML = originalHTML; btn.disabled = false; 
-                alert("現在地の取得に失敗しました。端末の位置情報サービスがオンになっているか確認してください。");
-                return; 
+                alert("現在地の取得に失敗しました。端末の位置情報設定を確認してください。"); return; 
             }
 
             try {
@@ -703,7 +698,6 @@
             catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
         });
 
-        // ★ 新規スポットの追加処理 (画像圧縮と階数対応)
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const submitBtn = document.getElementById('submit-btn');
@@ -711,7 +705,6 @@
             let finalHours = is24h ? "24時間営業" : document.getElementById('add-hours').value.trim();
             if (!finalHours) { alert("利用可能時間を入力するか、「24時間営業」を選択してください。"); return; }
             
-            // 座標チェック
             const latVal = document.getElementById('add-lat').value;
             const lngVal = document.getElementById('add-lng').value;
             if (!latVal || !lngVal) { alert("地図を動かして場所を指定してください。"); return; }
@@ -725,17 +718,13 @@
                 try {
                     submitBtn.innerText = "画像を圧縮・アップロード中...";
                     const originalFile = fileInput.files[0];
-                    
-                    // ★ ブラウザ内で画像を圧縮
                     const compressedBlob = await compressImage(originalFile, 1200); 
                     
-                    // 圧縮したBlobをFirebase Storageにアップロード
                     const storageRef = ref(storage, 'spots/' + Date.now() + '.jpg');
                     await uploadBytes(storageRef, compressedBlob);
                     uploadedImageUrl = await getDownloadURL(storageRef);
                 } catch (err) {
-                    console.error("画像処理失敗:", err);
-                    alert("画像のアップロードに失敗しました。画像なしで登録を続行します。");
+                    console.error("画像処理失敗:", err); alert("画像のアップロードに失敗しました。画像なしで登録を続行します。");
                 }
             }
             
@@ -746,7 +735,7 @@
             const newSpot = { 
                 name: document.getElementById('add-name').value, 
                 placename: document.getElementById('add-placename').value, 
-                floor: document.getElementById('add-floor').value || "", // ★ 階数フィールド
+                floor: document.getElementById('add-floor').value || "", 
                 latitude: parseFloat(latVal), 
                 longitude: parseFloat(lngVal), 
                 available_hours: finalHours, 
@@ -810,6 +799,7 @@
             });
         });
 
+        // アプリ起動時にデータを読み込む
         loadSpots();
     </script>
 </body>
