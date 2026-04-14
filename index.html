@@ -57,7 +57,6 @@
         .custom-popup { display: flex; flex-direction: column; gap: 4px; }
         .popup-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 600; display: flex; gap:4px; align-items: center; line-height: 1.2; }
         .popup-floor { background: var(--bg-color); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; color: var(--science-blue); font-weight: 700; border: 1px solid var(--bg-darker); white-space: nowrap; }
-        /* ★ポップアップタイトル太字化 */
         .popup-title { font-size: 1.05rem; font-weight: 800; color: var(--science-blue); line-height: 1.3; margin-bottom: 2px; }
         .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 10px; border-radius: 8px; cursor: pointer; transition: background 0.2s ease; font-size: 0.85rem; margin-top: 6px; }
         .popup-btn:active { background: var(--bg-darker); }
@@ -91,9 +90,7 @@
         .section-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 16px 0; color: var(--science-blue); }
 
         /* --- スポットカード --- */
-        /* ★ 新規追加フォームのベースカードにはクリックアニメーションを適用しない */
         .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(28, 49, 119, 0.06); position: relative; border: 1px solid var(--bg-darker); }
-        /* ★ リストのクリック可能なカードだけにアニメーションを適用 */
         .clickable-card { cursor: pointer; transition: background-color 0.2s ease; }
         .clickable-card:active { background-color: var(--bg-color); }
         
@@ -103,8 +100,6 @@
         .status-badge { position: absolute; top: 16px; right: 16px; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
         .status-open { background: #eef7f0; color: var(--accent-green); }
         .status-closed { background: #fdf0f0; color: var(--accent-red); }
-        
-        /* ★スポットタイトルの太字化 */
         .spot-title { font-size: 1.1rem; font-weight: 800; margin: 4px 0 6px 0; color: var(--text-main); line-height: 1.3; display: flex; align-items: center; gap: 6px; }
 
         /* --- フォーム --- */
@@ -291,7 +286,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
     <script>
-        const MAP_TILE_URL = 'https://tile.tracestrack.com/v/maps/carto_v2/style.json?key=27e171dc5ca2cc214ecf5ab9d0f493bd';
+        // ★ Carto V2のマップデザイン（日本語ラベル適用）に差し替え
+        const MAP_TILE_URL = 'https://tile.tracestrack.com/ja/{z}/{x}/{y}.png?key=27e171dc5ca2cc214ecf5ab9d0f493bd';
         const MAP_ATTRIBUTION = '&copy; OpenStreetMap contributors, Tiles &copy; Tracestrack';
         
         const map = L.map('map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
@@ -355,7 +351,6 @@
         window.onbeforeunload = () => isFormDirty ? "入力内容が破棄されますがよろしいですか？" : null;
         document.getElementById('add-spot-form').addEventListener('input', () => isFormDirty = true);
 
-        // 24時間ボタン
         let is24h = false;
         document.getElementById('btn-24h').addEventListener('click', (e) => {
             is24h = !is24h; const input = document.getElementById('add-hours');
@@ -366,7 +361,6 @@
             }
         });
 
-        // ユーティリティ
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
             return str.replace(/[&<>'"]/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[match]));
@@ -439,7 +433,6 @@
             });
         }
 
-        // --- コメント読み込み ---
         async function loadComments(spotId) {
             const commentsListEl = document.getElementById('detail-comments-list');
             commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--text-sub);">読み込み中...</p>';
@@ -478,7 +471,6 @@
             }
         }
 
-        // --- 画面遷移と描画 ---
         window.flyToSpot = function(id) {
             const spot = allSpots.find(s => s.id === id);
             if (!spot) return;
@@ -596,7 +588,6 @@
             allSpots.push(spot);
         }
 
-        // --- データ読み込み ---
         async function loadSpots() {
             try {
                 const querySnapshot = await getDocs(collection(db, "spots"));
@@ -618,7 +609,6 @@
 
         map.on('moveend', updateMapVisibleList);
         
-        // --- フィルター操作 ---
         document.getElementById("sort-select").addEventListener('change', async (e) => {
             if (e.target.value === "distance" && !userLocation) {
                 const wantGps = confirm("距離順で並び替えるには、現在地の取得が必要です。現在地を取得しますか？");
@@ -633,36 +623,38 @@
             updateFullList(); 
         });
         
-        // --- GPS取得処理 ---
+        // ★ 位置情報取得の抜本的改修（高精度タイムアウト時のフォールバック処理）
         function getGPS() { 
             return new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, 
+                if (!navigator.geolocation) {
+                    return reject(new Error("お使いの端末は位置情報に対応していません。"));
+                }
+                const optionsHigh = { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 };
+                
+                // まず高精度で取得を試みる
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => resolve(pos), 
                     (err) => {
-                        console.warn("高精度GPS取得失敗、低精度に切り替えます:", err);
-                        navigator.geolocation.getCurrentPosition(resolve, reject, {
-                            enableHighAccuracy: false, timeout: 10000, maximumAge: 60000
-                        });
+                        console.warn("高精度GPSの取得に失敗。標準精度で再試行します:", err);
+                        // 失敗時、より寛容な設定で再チャレンジ
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => resolve(pos), 
+                            (err2) => reject(err2), 
+                            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+                        );
                     }, 
-                    { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+                    optionsHigh
                 );
             }); 
         }
 
         document.getElementById('gps-btn').addEventListener('click', async () => {
-            if (!navigator.geolocation) return alert("現在地取得に対応していません。");
             const btn = document.getElementById('gps-btn'); 
             const originalHTML = btn.innerHTML;
             btn.innerHTML = "測位中..."; btn.disabled = true;
 
-            let pos;
-            try { pos = await getGPS(); } 
-            catch(err) { 
-                btn.innerHTML = originalHTML; btn.disabled = false; 
-                alert("現在地の取得に失敗しました。端末の位置情報設定を確認してください。"); return; 
-            }
-
             try {
-                btn.innerHTML = originalHTML; btn.disabled = false;
+                const pos = await getGPS(); 
                 userLocation = [pos.coords.latitude, pos.coords.longitude]; 
                 
                 if (userMarker) { map.removeLayer(userMarker); }
@@ -682,7 +674,12 @@
                 updateFullList();
                 const sortSelect = document.getElementById("sort-select"); 
                 if(sortSelect.value === "default") { sortSelect.value = "distance"; updateFullList(); }
-            } catch(err) { console.error("GPS取得後のUI処理エラー:", err); }
+            } catch(err) { 
+                console.error(err);
+                alert("位置情報を取得できませんでした。端末の設定で位置情報へのアクセスが許可されているかご確認ください。"); 
+            } finally {
+                btn.innerHTML = originalHTML; btn.disabled = false;
+            }
         });
 
         document.getElementById('btn-get-location').addEventListener('click', async () => {
@@ -691,9 +688,12 @@
             try { 
                 const pos = await getGPS(); 
                 if (addMap) { addMap.flyTo([pos.coords.latitude, pos.coords.longitude], 18, { animate: true }); } 
-                btn.innerHTML = "📍 取得完了"; setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000); 
-            } 
-            catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
+                btn.innerHTML = "📍 取得完了"; 
+            } catch(err) { 
+                alert("位置情報を取得できませんでした。"); 
+            } finally {
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000); 
+            }
         });
 
         const scrollList = document.getElementById("map-visible-list");
@@ -701,7 +701,6 @@
             if (e.deltaY !== 0) { e.preventDefault(); scrollList.scrollBy({ left: e.deltaY < 0 ? -150 : 150, behavior: 'smooth' }); }
         });
 
-        // --- フォーム送信処理 ---
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const submitBtn = document.getElementById('submit-btn');
@@ -772,7 +771,6 @@
             }
         });
 
-        // --- コメント送信 ---
         document.getElementById('add-comment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentDetailSpotId) return;
@@ -793,7 +791,7 @@
             }
         });
 
-        // --- タブ切り替え ---
+        // --- タブ切り替え（★ 追加マップの再描画処理を追加） ---
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', () => {
@@ -804,11 +802,14 @@
                 if (targetId !== 'view-detail') { previousView = targetId; }
                 document.getElementById(targetId).classList.add('active');
                 
+                // マップの描画サイズ更新（表示バグ対策）
                 if (targetId === 'view-map') {
                     requestAnimationFrame(() => { map.invalidateSize(); });
                 }
+                // ★ 追加タブ表示時にマップを初期化し、サイズを強制再計算
                 if (targetId === 'view-add') { 
-                    requestAnimationFrame(() => { if (addMap) addMap.invalidateSize(); });
+                    initAddMap();
+                    setTimeout(() => { if (addMap) addMap.invalidateSize(); }, 100);
                 }
                 window.scrollTo(0, 0);
             });
