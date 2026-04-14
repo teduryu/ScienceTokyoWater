@@ -31,13 +31,18 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* --- ヘッダーの洗練 --- */
         header {
             background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            text-align: center; padding: 16px 0; font-size: 1.25rem; font-weight: 700;
-            color: var(--science-blue); position: fixed; top: 0; left: 0;
-            right: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding: 14px 0; font-size: 1.25rem; font-weight: 700;
+            color: var(--science-blue); position: fixed; top: 0; left: 0; right: 0;
             z-index: 2000; box-shadow: 0 1px 0 rgba(28, 49, 119, 0.1); letter-spacing: 0.02em;
+        }
+        .header-logo {
+            width: 26px; height: 26px; margin-right: 8px;
+            object-fit: contain; border-radius: 4px;
         }
 
         .container { padding: 20px; }
@@ -57,14 +62,16 @@
         .floating-btn { width: auto; padding: 10px 24px; font-size: 0.9rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; pointer-events: auto; }
         .floating-ui-bottom { position: absolute; bottom: 85px; left: 0; width: 100%; z-index: 1000; pointer-events: none; }
 
-        /* ★ 修正ポイント: pointer-events: auto; を追加し、PC向けにスクロールバーのデザインを微調整 */
         .horizontal-scroll-list { 
             pointer-events: auto; 
             display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px; 
             scroll-snap-type: x mandatory; 
             scrollbar-width: thin; scrollbar-color: rgba(28, 49, 119, 0.3) transparent;
         }
-        .horizontal-scroll-list::-webkit-scrollbar { height: 6px; }
+        .horizontal-scroll-list::-webkit-scrollbar { height: 6px; display: none; /* スマホでは非表示 */ }
+        @media (min-width: 768px) {
+            .horizontal-scroll-list::-webkit-scrollbar { display: block; }
+        }
         .horizontal-scroll-list::-webkit-scrollbar-thumb { background: rgba(28, 49, 119, 0.3); border-radius: 10px; }
         .horizontal-scroll-list::-webkit-scrollbar-track { background: transparent; }
         
@@ -72,7 +79,6 @@
             pointer-events: auto; flex: 0 0 78%; scroll-snap-align: center; 
             background-color: rgba(255, 255, 255, 0.98); box-shadow: 0 6px 20px rgba(28, 49, 119, 0.15);
             border: 1px solid var(--bg-darker); margin-bottom: 0; padding: 12px 16px; border-radius: 16px;
-            /* PC画面でカード幅が広がりすぎないように最大幅を指定 */
             max-width: 350px;
         }
         #map-visible-list .spot-title { font-size: 0.95rem; margin: 4px 0; }
@@ -123,11 +129,21 @@
         .comment-text { font-size: 0.9rem; white-space: pre-wrap; color: var(--text-main); line-height: 1.5; }
         #detail-comments-list { margin-bottom: 15px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
 
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0 25px 0; box-shadow: 0 -1px 10px rgba(0,0,0,0.05); z-index: 2000; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; color: var(--science-sub); width: 33%; cursor: pointer; }
-        .nav-item.active { color: var(--science-blue); font-weight: 700; }
-        .nav-item span:first-child { font-size: 1.4rem; margin-bottom: 2px; opacity: 0.5; transition: 0.2s; }
-        .nav-item.active span:first-child { opacity: 1; transform: translateY(-2px); }
+        /* --- フッター（SVGアイコンで洗練） --- */
+        .bottom-nav { 
+            position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.98); 
+            backdrop-filter: blur(10px); display: flex; justify-content: space-around; 
+            padding: 10px 0 28px 0; box-shadow: 0 -4px 20px rgba(28,49,119,0.06); 
+            z-index: 2000; border-top: 1px solid var(--bg-darker);
+        }
+        .nav-item { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 0.7rem; color: #99a5c1; width: 33%; cursor: pointer; transition: all 0.2s ease; 
+            font-weight: 600;
+        }
+        .nav-item svg { width: 22px; height: 22px; margin-bottom: 4px; stroke: currentColor; transition: all 0.2s ease; }
+        .nav-item.active { color: var(--science-blue); }
+        .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
 
         .user-location-marker { background: var(--accent-red); width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.4); }
         .status-badge { position: absolute; top: 16px; right: 16px; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
@@ -140,7 +156,10 @@
 </head>
 <body>
 
-    <header>💧 ScienceTokyoWater</header>
+    <header>
+        <img src="menuicon.png" alt="Logo" class="header-logo">
+        ScienceTokyoWater
+    </header>
 
     <div id="view-map" class="view-section active">
         <div id="map"></div>
@@ -242,9 +261,33 @@
     </div>
 
     <div class="bottom-nav">
-        <div class="nav-item active" data-target="view-map"><span>🗺️</span><span>マップ</span></div>
-        <div class="nav-item" data-target="view-list"><span>📋</span><span>リスト</span></div>
-        <div class="nav-item" data-target="view-add"><span>➕</span><span>追加</span></div>
+        <div class="nav-item active" data-target="view-map">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+                <line x1="15" y1="3" x2="15" y2="21"></line>
+            </svg>
+            <span>マップ</span>
+        </div>
+        <div class="nav-item" data-target="view-list">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            <span>リスト</span>
+        </div>
+        <div class="nav-item" data-target="view-add">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            <span>追加</span>
+        </div>
     </div>
 
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.2.0/mapbox-gl.js"></script>
@@ -291,12 +334,10 @@
         window.onbeforeunload = () => isFormDirty ? "入力内容が破棄されますがよろしいですか？" : null;
         document.getElementById('add-spot-form').addEventListener('input', () => isFormDirty = true);
 
-        // ★ 修正1: PC向けのマウスホイールによる横スクロール対応
         const scrollList = document.getElementById("map-visible-list");
         scrollList.addEventListener('wheel', (e) => {
-            // 縦スクロール要素上で横スクロールを実現
             if (e.deltaY !== 0) {
-                e.preventDefault(); // デフォルトの縦スクロールをキャンセル
+                e.preventDefault(); 
                 scrollList.scrollBy({ left: e.deltaY < 0 ? -150 : 150, behavior: 'smooth' });
             }
         });
