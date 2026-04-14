@@ -12,7 +12,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
     <style>
@@ -20,148 +19,134 @@
             --science-blue: #1c3177; --science-sub: #7f96c2; --bg-color: #f2f4f9;
             --bg-darker: #e8eaf1; --accent-red: #f02b2b; --accent-green: #2b9e4a;
             --card-bg: #FFFFFF; --text-main: #222222; --text-sub: #707070;
+            --pin-hot: #f02b2b; --pin-machine: #1c3177; --pin-tap: #00a8ff; --pin-default: #7f96c2;
         }
 
         body {
-            font-family: 'Hind', 'Noto Sans JP', sans-serif;
-            margin: 0; padding: 0;
+            font-family: 'Hind', 'Noto Sans JP', sans-serif; margin: 0; padding: 0;
             background-color: var(--bg-color); color: var(--text-main);
             padding-top: 60px; padding-bottom: calc(65px + env(safe-area-inset-bottom));
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased; overflow-x: hidden; -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- ヘッダー --- */
         header {
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
             display: flex; align-items: center; justify-content: center;
             padding: 12px 0; font-size: 1.15rem; font-weight: 700;
             color: var(--science-blue); position: fixed; top: 0; left: 0; right: 0;
             z-index: 2000; box-shadow: 0 1px 0 rgba(28, 49, 119, 0.1); letter-spacing: 0.02em;
         }
-        .header-logo {
-            width: 24px; height: 24px; margin-right: 8px;
-            object-fit: contain; border-radius: 4px;
-        }
+        .header-logo { width: 24px; height: 24px; margin-right: 8px; object-fit: contain; border-radius: 4px; }
 
         .container { padding: 16px; }
         .view-section { display: none; animation: fadeIn 0.3s ease; }
         .view-section.active { display: block; height: 100%; min-height: calc(100vh - 140px); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- マップ画面 (Leaflet) --- */
+        /* --- マップ関連 --- */
         #view-map.active { position: fixed; top: 0; left: 0; right: 0; bottom: 0; padding: 0; z-index: 10; }
         #map { width: 100%; height: 100%; z-index: 1; }
         .leaflet-top { top: 65px !important; }
         
-        /* ポップアップのコンパクト化 */
         .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(28,49,119,0.15); }
         .leaflet-popup-content { margin: 14px; font-family: 'Hind', 'Noto Sans JP', sans-serif; width: 200px !important; }
         .leaflet-container a.leaflet-popup-close-button { color: var(--text-sub); top: 8px; right: 8px; font-size: 1.2rem; }
         
         .custom-popup { display: flex; flex-direction: column; gap: 4px; }
-        .popup-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 600; }
+        .popup-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 600; display: flex; gap:4px; align-items: center; }
+        .popup-floor { background: var(--bg-color); padding: 1px 4px; border-radius: 4px; font-size: 0.65rem; color: var(--science-blue); font-weight: 700; border: 1px solid var(--bg-darker); }
         .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--science-blue); line-height: 1.3; margin-bottom: 2px; }
         .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; margin-top: 6px; }
-        .popup-btn:active { background: var(--bg-darker); }
+
+        /* ★ カスタムピンデザイン */
+        .custom-pin { filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); display: flex; align-items: center; justify-content: center; }
+        .custom-pin svg { width: 100%; height: 100%; }
 
         .floating-ui-top { position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
-        .floating-btn { width: auto; padding: 8px 18px; font-size: 0.85rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; pointer-events: auto; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .floating-btn { width: auto; padding: 8px 18px; font-size: 0.85rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; pointer-events: auto; font-weight: 700; display: flex; align-items: center; gap: 6px; background: var(--science-blue); color: white; border: none; cursor: pointer;}
         
         .floating-ui-bottom { position: absolute; bottom: calc(65px + env(safe-area-inset-bottom)); left: 0; width: 100%; z-index: 1000; pointer-events: none; }
 
-        .horizontal-scroll-list { 
-            pointer-events: auto; display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px; 
-            scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: rgba(28, 49, 119, 0.3) transparent;
-        }
-        .horizontal-scroll-list::-webkit-scrollbar { height: 6px; display: none; }
-        @media (min-width: 768px) { .horizontal-scroll-list::-webkit-scrollbar { display: block; } }
-        .horizontal-scroll-list::-webkit-scrollbar-thumb { background: rgba(28, 49, 119, 0.3); border-radius: 10px; }
-        .horizontal-scroll-list::-webkit-scrollbar-track { background: transparent; }
+        .horizontal-scroll-list { pointer-events: auto; display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .horizontal-scroll-list::-webkit-scrollbar { display: none; }
+        #map-visible-list .spot-card { pointer-events: auto; flex: 0 0 82%; scroll-snap-align: center; background-color: rgba(255, 255, 255, 0.98); box-shadow: 0 6px 20px rgba(28, 49, 119, 0.15); border: 1px solid var(--bg-darker); margin-bottom: 0; padding: 12px 14px; border-radius: 16px; max-width: 320px; }
         
-        #map-visible-list .spot-card { 
-            pointer-events: auto; flex: 0 0 82%; scroll-snap-align: center; 
-            background-color: rgba(255, 255, 255, 0.98); box-shadow: 0 6px 20px rgba(28, 49, 119, 0.15);
-            border: 1px solid var(--bg-darker); margin-bottom: 0; padding: 12px 14px; border-radius: 16px;
-            max-width: 320px;
-        }
-
         .empty-message-pill { pointer-events: auto; background: rgba(255,255,255,0.98); padding: 12px 24px; border-radius: 30px; margin: 0 auto; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); box-shadow: 0 8px 20px rgba(28, 49, 119, 0.1); border: 1px solid var(--bg-darker); }
 
         .btn-large { pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--science-blue); color: white; border: none; padding: 12px; font-size: 0.95rem; border-radius: 50px; cursor: pointer; font-weight: 700; font-family: inherit; transition: all 0.2s; }
-        .btn-large:active { transform: scale(0.98); background: #15265b; }
-        .btn-large:disabled { background: var(--science-sub); cursor: not-allowed; transform: none; }
-        .btn-secondary { background: var(--science-sub); box-shadow: 0 4px 10px rgba(127, 150, 194, 0.3); }
+        .btn-large:active { transform: scale(0.98); }
+        .btn-large:disabled { background: var(--science-sub); cursor: not-allowed; }
+        .btn-secondary { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); box-shadow: none; }
 
         .controls { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .control-item { background: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; }
+        .control-item { background: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 500; display: flex; align-items: center; justify-content: center; }
         .control-item.active { background: var(--science-blue); color: white; border-color: var(--science-blue); }
-        .status-dot { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; margin-right: 6px; }
-        .control-item.active .status-dot { background: white; }
 
-        .section-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; color: var(--science-blue); }
+        .section-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; color: var(--science-blue); }
 
-        .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(28, 49, 119, 0.04); position: relative; border: 1px solid var(--bg-darker); }
-        .clickable-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-        .clickable-card:active { transform: scale(0.98); background-color: #f8fafc; }
-        
+        /* --- スポットカード --- */
+        .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(28, 49, 119, 0.04); position: relative; border: 1px solid var(--bg-darker); cursor: pointer; }
+        .spot-card:active { transform: scale(0.98); }
         .spot-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
         .dist-badge { background: var(--bg-darker); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--science-blue); }
         .closed-days { color: var(--accent-red); font-weight: 600; font-size: 0.85em; margin-left: 4px; }
+        .status-badge { position: absolute; top: 12px; right: 12px; padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
+        .status-open { background: #eef7f0; color: var(--accent-green); }
+        .status-closed { background: #fdf0f0; color: var(--accent-red); }
 
         /* --- フォーム --- */
         form label { display: block; margin-top: 14px; margin-bottom: 6px; font-size: 0.85rem; color: var(--science-blue); font-weight: 700; }
-        form input[type="text"], form input[type="file"], form textarea { width: 100%; padding: 10px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 0.95rem; background: white; }
+        form input[type="text"], form input[type="file"], form textarea { width: 100%; padding: 10px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 0.95rem; background: white; transition: all 0.2s; }
         form input:focus, form textarea:focus { outline: none; border-color: var(--science-blue); box-shadow: 0 0 0 2px rgba(28, 49, 119, 0.1); }
+        form input:disabled { background-color: var(--bg-darker); color: var(--text-sub); opacity: 0.7; }
+        .input-group { display: flex; gap: 8px; }
 
         .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-color); color: var(--science-sub); border: 1px solid var(--bg-darker); border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
         .feature-checkbox { display: none; }
-        .feature-label { display: inline-block; padding: 6px 10px; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 8px; font-size: 0.85rem; color: var(--text-sub); cursor: pointer; transition: all 0.2s; user-select: none; font-weight: 500; }
-        .feature-checkbox:checked + .feature-label { background: var(--science-blue); color: white; border-color: var(--science-blue); box-shadow: 0 2px 6px rgba(28,49,119,0.2); }
-        .days-grid, .features-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .feature-label { display: inline-block; padding: 6px 10px; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 8px; font-size: 0.85rem; color: var(--text-sub); cursor: pointer; transition: all 0.2s; font-weight: 500; }
+        .feature-checkbox:checked + .feature-label { background: var(--science-blue); color: white; border-color: var(--science-blue); }
+        .features-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+        .days-grid { display: flex; flex-wrap: nowrap; gap: 4px; margin-bottom: 10px; width: 100%; justify-content: space-between; }
+        .day-checkbox { display: none; }
+        .day-label { flex: 1; display: flex; align-items: center; justify-content: center; padding: 6px 0; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 8px; font-size: 0.8rem; color: var(--text-sub); cursor: pointer; font-weight: 500; }
+        .day-checkbox:checked + .day-label { background: var(--science-blue); color: white; border-color: var(--science-blue); }
 
         .add-map-container { position: relative; height: 180px; width: 100%; border-radius: 12px; overflow: hidden; border: 2px solid var(--science-sub); margin-bottom: 8px; }
         .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); transition: transform 0.1s; }
         .center-pin.moving { transform: translate(-50%, -120%); }
 
-        /* --- 詳細ページ・コメント --- */
+        /* --- 詳細ページ --- */
         .detail-image { width: 100%; height: 220px; object-fit: contain; border-radius: 12px; margin-bottom: 15px; background-color: var(--bg-color); border: 1px solid var(--bg-darker); }
-        .detail-back-btn { background: none; border: none; color: var(--science-sub); font-size: 1rem; font-weight: bold; padding: 8px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: color 0.2s; }
-        .detail-back-btn:active { color: var(--science-blue); }
+        .detail-back-btn { background: none; border: none; color: var(--science-sub); font-size: 1rem; font-weight: bold; padding: 8px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
         .comment-item { background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--bg-darker); }
         .comment-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .comment-name { font-size: 0.8rem; font-weight: 700; color: var(--science-blue); }
-        .comment-date { font-size: 0.7rem; color: var(--text-sub); }
         .comment-text { font-size: 0.85rem; white-space: pre-wrap; color: var(--text-main); line-height: 1.4; }
-        #detail-comments-list { margin-bottom: 15px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
 
         /* --- フッター --- */
         .bottom-nav { 
             position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.96); 
             backdrop-filter: blur(10px); display: flex; justify-content: space-around; 
             padding: 8px 0 calc(8px + env(safe-area-inset-bottom)) 0; 
-            box-shadow: 0 -2px 10px rgba(28,49,119,0.06); 
-            z-index: 2000; border-top: 1px solid var(--bg-darker);
+            box-shadow: 0 -2px 10px rgba(28,49,119,0.06); z-index: 2000; border-top: 1px solid var(--bg-darker);
         }
-        .nav-item { 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 0.65rem; color: #99a5c1; width: 33%; cursor: pointer; transition: all 0.2s ease; 
-            font-weight: 600;
-        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; color: #99a5c1; width: 33%; cursor: pointer; transition: all 0.2s ease; font-weight: 600; }
         .nav-item svg { width: 20px; height: 20px; margin-bottom: 3px; stroke: currentColor; transition: all 0.2s ease; }
         .nav-item.active { color: var(--science-blue); }
         .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
 
-        .user-location-marker { background: var(--accent-red); width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.4); }
-        .status-badge { position: absolute; top: 12px; right: 12px; padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
-        .status-open { background: #eef7f0; color: var(--accent-green); }
-        .status-closed { background: #fdf0f0; color: var(--accent-red); }
-        .spot-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 700; line-height: 1.2; }
-        .spot-title { font-size: 1rem; font-weight: 700; margin: 4px 0 6px 0; color: var(--text-main); line-height: 1.3; display: flex; align-items: center; gap: 6px; }
-        .camera-icon { width: 14px; height: 14px; color: var(--science-sub); }
+        /* ★ PWAインストールプロンプト */
+        #pwa-prompt {
+            display: none; position: fixed; bottom: calc(75px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 350px; background: white; border-radius: 12px; padding: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 3000; border: 1px solid var(--bg-darker);
+            align-items: center; gap: 12px;
+        }
+        #pwa-prompt.show { display: flex; animation: slideUp 0.4s ease forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+        .pwa-close { position: absolute; top: 8px; right: 8px; border: none; background: none; color: var(--text-sub); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -170,6 +155,16 @@
         <img src="menuicon.png" alt="Logo" class="header-logo">
         ScienceTokyoWater
     </header>
+
+    <div id="pwa-prompt">
+        <button class="pwa-close" onclick="document.getElementById('pwa-prompt').classList.remove('show')">✕</button>
+        <img src="icon.png" alt="App Icon" style="width: 40px; height: 40px; border-radius: 8px;">
+        <div style="flex: 1;">
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--science-blue);">アプリを追加</div>
+            <div style="font-size: 0.75rem; color: var(--text-sub);">ホーム画面に追加して便利に使おう！</div>
+        </div>
+        <button id="btn-install-pwa" class="btn-large" style="width: auto; padding: 8px 16px; font-size: 0.8rem;">追加</button>
+    </div>
 
     <div id="view-map" class="view-section active">
         <div id="map"></div>
@@ -186,7 +181,7 @@
         <h2 class="section-title">スポット一覧</h2>
         <div class="controls">
             <select id="sort-select" class="control-item"><option value="default">名前順</option><option value="distance">現在地に近い順</option></select>
-            <div id="filter-open" class="control-item"><span class="status-dot"></span>営業中のみ</div>
+            <div id="filter-open" class="control-item"><span class="status-dot" style="display:inline-block; width:8px; height:8px; background:var(--accent-green); border-radius:50%; margin-right:6px;"></span>営業中のみ</div>
         </div>
         <div id="full-spot-list"><p style="text-align: center; color: var(--text-sub); font-size: 0.9rem;">読み込み中...</p></div>
     </div>
@@ -201,10 +196,13 @@
         <div class="spot-card">
             <form id="add-spot-form">
                 <label>スポット名 (必須)</label>
-                <input type="text" id="add-name" required placeholder="例: 1階 ウォーターサーバー">
+                <input type="text" id="add-name" required placeholder="例: 西3号館 ウォーターサーバー">
 
-                <label>建物・エリア名 (必須)</label>
-                <input type="text" id="add-placename" required placeholder="例: 本館">
+                <label>建物名・エリア と 階数 (必須)</label>
+                <div class="input-group">
+                    <input type="text" id="add-placename" required placeholder="建物名 (例: 本館)" style="flex: 2;">
+                    <input type="text" id="add-floor" required placeholder="階数 (例: 3階)" style="flex: 1;">
+                </div>
 
                 <label>場所の指定 (地図を動かしてピンを合わせる)</label>
                 <div class="add-map-container">
@@ -213,35 +211,36 @@
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="var(--accent-red)" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>
                     </div>
                 </div>
-                <input type="hidden" id="add-lat" required>
-                <input type="hidden" id="add-lng" required>
-                
+                <input type="hidden" id="add-lat">
+                <input type="hidden" id="add-lng">
                 <button type="button" id="btn-get-location" class="btn-large btn-secondary" style="margin-top:8px; font-size: 0.85rem;">現在地を取得</button>
 
                 <label>特徴 (複数選択可)</label>
                 <div class="features-grid">
-                    <input type="checkbox" id="f1" name="features" value="冷水" class="feature-checkbox"><label for="f1" class="feature-label">冷水</label>
-                    <input type="checkbox" id="f2" name="features" value="お湯" class="feature-checkbox"><label for="f2" class="feature-label">お湯</label>
-                    <input type="checkbox" id="f3" name="features" value="お茶" class="feature-checkbox"><label for="f3" class="feature-label">お茶</label>
-                    <input type="checkbox" id="f4" name="features" value="紙コップ" class="feature-checkbox"><label for="f4" class="feature-label">紙コップ</label>
+                    <input type="checkbox" id="f1" name="features" value="給水機" class="feature-checkbox"><label for="f1" class="feature-label">給水機</label>
+                    <input type="checkbox" id="f2" name="features" value="蛇口" class="feature-checkbox"><label for="f2" class="feature-label">蛇口</label>
+                    <input type="checkbox" id="f3" name="features" value="お湯" class="feature-checkbox"><label for="f3" class="feature-label">お湯</label>
                 </div>
 
-                <label>利用可能時間</label>
-                <input type="text" id="add-hours" placeholder="例: 09:00 - 18:00 (空白は24時間営業)">
+                <label>利用可能時間 (必須)</label>
+                <div class="input-group" style="margin-bottom:10px;">
+                    <input type="text" id="add-hours" placeholder="例: 09:00 - 18:00" style="flex:1;">
+                    <button type="button" id="btn-24h" class="control-item" style="margin:0; border-radius:8px;">24時間営業</button>
+                </div>
 
                 <label>休業日</label>
                 <div class="days-grid">
-                    <input type="checkbox" id="d1" name="closed_days" value="1" class="feature-checkbox"><label for="d1" class="feature-label">月</label>
-                    <input type="checkbox" id="d2" name="closed_days" value="2" class="feature-checkbox"><label for="d2" class="feature-label">火</label>
-                    <input type="checkbox" id="d3" name="closed_days" value="3" class="feature-checkbox"><label for="d3" class="feature-label">水</label>
-                    <input type="checkbox" id="d4" name="closed_days" value="4" class="feature-checkbox"><label for="d4" class="feature-label">木</label>
-                    <input type="checkbox" id="d5" name="closed_days" value="5" class="feature-checkbox"><label for="d5" class="feature-label">金</label>
-                    <input type="checkbox" id="d6" name="closed_days" value="6" class="feature-checkbox"><label for="d6" class="feature-label">土</label>
-                    <input type="checkbox" id="d0" name="closed_days" value="0" class="feature-checkbox"><label for="d0" class="feature-label">日</label>
-                    <input type="checkbox" id="d7" name="closed_days" value="7" class="feature-checkbox"><label for="d7" class="feature-label">祝</label>
+                    <input type="checkbox" id="d1" name="closed_days" value="1" class="day-checkbox"><label for="d1" class="day-label">月</label>
+                    <input type="checkbox" id="d2" name="closed_days" value="2" class="day-checkbox"><label for="d2" class="day-label">火</label>
+                    <input type="checkbox" id="d3" name="closed_days" value="3" class="day-checkbox"><label for="d3" class="day-label">水</label>
+                    <input type="checkbox" id="d4" name="closed_days" value="4" class="day-checkbox"><label for="d4" class="day-label">木</label>
+                    <input type="checkbox" id="d5" name="closed_days" value="5" class="day-checkbox"><label for="d5" class="day-label">金</label>
+                    <input type="checkbox" id="d6" name="closed_days" value="6" class="day-checkbox"><label for="d6" class="day-label">土</label>
+                    <input type="checkbox" id="d0" name="closed_days" value="0" class="day-checkbox"><label for="d0" class="day-label">日</label>
+                    <input type="checkbox" id="d7" name="closed_days" value="7" class="day-checkbox"><label for="d7" class="day-label">祝</label>
                 </div>
 
-                <label>画像 (5MB以下 / 任意)</label>
+                <label>画像 (自動圧縮されます / 任意)</label>
                 <input type="file" id="add-image" accept="image/*">
 
                 <button type="submit" id="submit-btn" class="btn-large" style="margin-top:20px;">この内容で申請する</button>
@@ -252,20 +251,19 @@
     <div id="view-detail" class="view-section">
         <div class="container">
             <button class="detail-back-btn" onclick="goBack()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                戻る
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>戻る
             </button>
             <div class="spot-card" style="margin-bottom: 30px;">
                 <img id="detail-image" class="detail-image" src="" alt="スポット画像" style="display:none;">
-                <div id="detail-placename" class="spot-placename" style="font-size: 0.85rem;"></div>
+                <div id="detail-placename" class="spot-placename" style="font-size: 0.85rem; display:flex; gap:6px; align-items:center;"></div>
                 <h2 id="detail-title" class="spot-title" style="font-size: 1.4rem; margin-bottom: 8px;"></h2>
                 <div id="detail-features" style="margin-bottom: 12px;"></div>
                 <div id="detail-meta" class="spot-meta" style="font-size: 0.95rem; margin-bottom: 10px;"></div>
                 
-                <button class="btn-large btn-secondary" onclick="flyToSpotFromDetail()" style="margin-top: 16px; color: var(--science-blue); background: var(--bg-color); border: 1px solid var(--bg-darker);">地図で確認する</button>
+                <button class="btn-large btn-secondary" onclick="flyToSpotFromDetail()" style="margin-top: 16px;">地図で確認する</button>
                 
                 <div id="detail-comments-section" style="margin-top: 25px; border-top: 2px solid var(--bg-color); padding-top: 16px;">
-                    <h3 style="font-size: 1rem; color: var(--science-blue); margin-bottom: 12px;">コメント</h3>
+                    <h3 class="section-title" style="font-size: 1rem; margin-bottom: 12px;">コメント</h3>
                     <div id="detail-comments-list"></div>
                     <form id="add-comment-form" style="display: flex; flex-direction: column; gap: 8px;">
                         <input type="text" id="comment-name" placeholder="お名前 (省略可)">
@@ -279,21 +277,15 @@
 
     <div class="bottom-nav">
         <div class="nav-item active" data-target="view-map">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
             <span>マップ</span>
         </div>
         <div class="nav-item" data-target="view-list">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
             <span>リスト</span>
         </div>
         <div class="nav-item" data-target="view-add">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
             <span>追加</span>
         </div>
     </div>
@@ -302,8 +294,9 @@
     <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js'); }</script>
 
     <script type="module">
+        // ★ オフラインキャッシュ機能をインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -316,49 +309,60 @@
         };
         
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // ★ オフラインモード（ローカルキャッシュ）の有効化
+        const db = getFirestore(app, {
+            localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+        });
         const storage = getStorage(app);
 
-        // ==========================================
-        // ★修正：地図タイルをTracestrack Maps (APIキー付き) に変更
-        // ==========================================
-        const map = L.map('map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
-        
-        L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png?key=27e171dc5ca2cc214ecf5ab9d0f493bd	', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles &copy; Tracestrack'
-        }).addTo(map);
-
-        let addMap = null;
-        let allSpots = [];
-        let userLocation = null;
-        let userMarker = null;
-        let filterOpenOnly = false;
-        let previousView = 'view-map'; 
-        let currentDetailSpotId = null;
-        
-        let isFormDirty = false;
-        window.onbeforeunload = () => isFormDirty ? "入力内容が破棄されますがよろしいですか？" : null;
-        document.getElementById('add-spot-form').addEventListener('input', () => isFormDirty = true);
-
-        const scrollList = document.getElementById("map-visible-list");
-        scrollList.addEventListener('wheel', (e) => {
-            if (e.deltaY !== 0) { e.preventDefault(); scrollList.scrollBy({ left: e.deltaY < 0 ? -150 : 150, behavior: 'smooth' }); }
+        // --- PWA プロンプト制御 ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // 数秒後にプロンプトを表示（ユーザーの邪魔にならないように）
+            setTimeout(() => {
+                document.getElementById('pwa-prompt').classList.add('show');
+            }, 3000);
+        });
+        document.getElementById('btn-install-pwa').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') { document.getElementById('pwa-prompt').classList.remove('show'); }
+                deferredPrompt = null;
+            }
         });
 
+        // --- マップ初期化 ---
+        const map = L.map('map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
+        L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png?key=90a553379864e20e19961ae3de49ccc7', {
+            maxZoom: 19, attribution: '&copy; OpenStreetMap contributors, Tiles &copy; Tracestrack'
+        }).addTo(map);
+
+        let addMap = null; let allSpots = []; let userLocation = null; let userMarker = null;
+        let filterOpenOnly = false; let previousView = 'view-map'; let currentDetailSpotId = null;
+
+        // ★ 24時間ボタン
+        let is24h = false;
+        document.getElementById('btn-24h').addEventListener('click', (e) => {
+            is24h = !is24h; const input = document.getElementById('add-hours');
+            if (is24h) {
+                e.target.classList.add('active'); input.value = ''; input.disabled = true; input.placeholder = "24時間営業";
+            } else {
+                e.target.classList.remove('active'); input.disabled = false; input.placeholder = "例: 09:00 - 18:00";
+            }
+        });
+
+        // ユーティリティ関数
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
-            return str.replace(/[&<>'"]/g, match => {
-                const escape = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
-                return escape[match];
-            });
+            return str.replace(/[&<>'"]/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[match]));
         }
 
         function getDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180;
-            const dp = (lat2-lat1) * Math.PI/180;
-            const dl = (lon2-lon1) * Math.PI/180;
+            const R = 6371e3; const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180;
+            const dp = (lat2-lat1) * Math.PI/180; const dl = (lon2-lon1) * Math.PI/180;
             const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
@@ -387,6 +391,52 @@
             if (!closed || closed.length === 0) return "";
             const dayNames = ["日", "月", "火", "水", "木", "金", "土", "祝"];
             return `<span class="closed-days">休: ${closed.map(d => dayNames[d]).join(',')}</span>`;
+        }
+
+        // --- ★ 特徴ごとのピンカラー生成関数 ---
+        function getPinColor(features) {
+            if (!features) return "var(--pin-default)";
+            if (features.includes("お湯")) return "var(--pin-hot)";
+            if (features.includes("給水機")) return "var(--pin-machine)";
+            if (features.includes("蛇口")) return "var(--pin-tap)";
+            return "var(--pin-default)"; // デフォルト
+        }
+
+        function createCustomIcon(color) {
+            const svg = `<svg viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>`;
+            return L.divIcon({
+                className: 'custom-pin',
+                html: svg,
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+        }
+
+        // --- ★ 画像のクライアント側圧縮関数 ---
+        async function compressImage(file, maxSize = 1200) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width; let height = img.height;
+                        if (width > height) {
+                            if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+                        } else {
+                            if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+                        }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        // 80%の品質のJPEGに圧縮
+                        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
         }
 
         async function loadComments(spotId) {
@@ -437,16 +487,18 @@
 
         window.showDetail = function(id) {
             const activeView = document.querySelector('.view-section.active');
-            if (activeView && activeView.id !== 'view-detail') {
-                previousView = activeView.id;
-            }
+            if (activeView && activeView.id !== 'view-detail') { previousView = activeView.id; }
 
             currentDetailSpotId = id;
             const spot = allSpots.find(s => s.id === id);
             if (!spot) return;
             
             document.getElementById('detail-title').innerText = spot.name;
-            document.getElementById('detail-placename').innerText = escapeHTML(spot.placename) || "場所未設定";
+            
+            // 階数の表示対応
+            let placeHtml = `<span>${escapeHTML(spot.placename) || "場所未設定"}</span>`;
+            if (spot.floor) { placeHtml += `<span class="popup-floor">${escapeHTML(spot.floor)}</span>`; }
+            document.getElementById('detail-placename').innerHTML = placeHtml;
             
             const hoursStr = escapeHTML(spot.available_hours) || "24時間営業";
             const closedStr = getClosedDaysText(spot.closed_days);
@@ -474,13 +526,14 @@
             const distText = spot.distance ? `<span class="dist-badge">${formatDistance(spot.distance)}</span>` : "";
             const closedText = getClosedDaysText(spot.closed_days);
             const featuresHtml = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
-            const imgIcon = spot.imageUrl ? `<svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>` : '';
+            const imgIcon = spot.imageUrl ? `<svg style="width:14px;height:14px;color:var(--science-sub);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>` : '';
             const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
+            const floorBadge = spot.floor ? `<span class="popup-floor">${escapeHTML(spot.floor)}</span>` : "";
 
             return `
-                <div class="spot-card clickable-card" onclick="${onClickAction}('${spot.id}')">
+                <div class="spot-card" onclick="${onClickAction}('${spot.id}')">
                     <span class="status-badge ${openStatus ? 'status-open' : 'status-closed'}">${openStatus ? '営業中' : '時間外'}</span>
-                    <div class="spot-placename">${escapeHTML(spot.placename) || "場所未設定"}</div>
+                    <div class="popup-placename" style="margin-bottom:4px;">${escapeHTML(spot.placename) || "場所未設定"} ${floorBadge}</div>
                     <div class="spot-title">${escapeHTML(spot.name)} ${imgIcon}</div>
                     <div style="margin-bottom: 8px;">${featuresHtml}</div>
                     <div class="spot-meta">${distText}<span>${safeHours}</span>${closedText}</div>
@@ -522,19 +575,22 @@
         }
 
         function addMarker(spot) {
-            const safePlacename = escapeHTML(spot.placename) || "場所未設定";
             const safeName = escapeHTML(spot.name);
             const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
+            const floorBadge = spot.floor ? `<span class="popup-floor">${escapeHTML(spot.floor)}</span>` : "";
             
             const popupHtml = `
                 <div class="custom-popup">
-                    <div class="popup-placename">${safePlacename}</div>
+                    <div class="popup-placename"><span>${escapeHTML(spot.placename) || "場所未設定"}</span>${floorBadge}</div>
                     <div class="popup-title">${safeName}</div>
                     <div class="spot-meta" style="margin-bottom:8px;"><span>${safeHours}</span>${getClosedDaysText(spot.closed_days)}</div>
                     <button class="popup-btn" onclick="showDetail('${spot.id}')">詳細を見る</button>
                 </div>
             `;
-            const marker = L.marker([spot.latitude, spot.longitude]).addTo(map);
+            // ★ 特徴に応じてピンの色を変更
+            const pinColor = getPinColor(spot.features);
+            const marker = L.marker([spot.latitude, spot.longitude], { icon: createCustomIcon(pinColor) }).addTo(map);
+            
             marker.bindPopup(popupHtml);
             spot.marker = marker;
             allSpots.push(spot);
@@ -586,27 +642,21 @@
             if (!navigator.geolocation) return alert("現在地取得に対応していません。");
             const btn = document.getElementById('gps-btn'); 
             const originalHTML = btn.innerHTML;
-            btn.innerHTML = "測位中..."; 
-            btn.disabled = true;
+            btn.innerHTML = "測位中..."; btn.disabled = true;
 
             let pos;
-            try {
-                pos = await getGPS();
-            } catch(err) { 
-                btn.innerHTML = originalHTML; 
-                btn.disabled = false; 
+            try { pos = await getGPS(); } 
+            catch(err) { 
+                btn.innerHTML = originalHTML; btn.disabled = false; 
                 alert("現在地の取得に失敗しました。端末の位置情報サービスがオンになっているか確認してください。");
                 return; 
             }
 
             try {
-                btn.innerHTML = originalHTML; 
-                btn.disabled = false;
+                btn.innerHTML = originalHTML; btn.disabled = false;
                 userLocation = [pos.coords.latitude, pos.coords.longitude]; 
                 
-                if (userMarker) {
-                    map.removeLayer(userMarker);
-                }
+                if (userMarker) { map.removeLayer(userMarker); }
                 const userIcon = L.divIcon({ className: '', html: '<div class="user-location-marker"></div>' });
                 userMarker = L.marker(userLocation, {icon: userIcon}).addTo(map);
                 
@@ -623,17 +673,14 @@
                 updateFullList();
                 const sortSelect = document.getElementById("sort-select"); 
                 if(sortSelect.value === "default") { sortSelect.value = "distance"; updateFullList(); }
-            } catch(err) { 
-                console.error("GPS取得後のUI処理エラー:", err); 
-            }
+            } catch(err) { console.error("GPS取得後のUI処理エラー:", err); }
         });
 
         // --- 追加用マップ ---
-        // ★修正：追加用マップのタイルもTracestrack Mapsに変更
         function initAddMap() {
             if (addMap) return;
             addMap = L.map('add-map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
-            L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png?key=27e171dc5ca2cc214ecf5ab9d0f493bd', { maxZoom: 19 }).addTo(addMap);
+            L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.png?key=90a553379864e20e19961ae3de49ccc7', { maxZoom: 19 }).addTo(addMap);
             
             const pinEl = document.getElementById('center-pin');
             const latInput = document.getElementById('add-lat'); 
@@ -646,48 +693,52 @@
         }
 
         document.getElementById('btn-get-location').addEventListener('click', async () => {
-            const btn = document.getElementById('btn-get-location'); 
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "取得中..."; 
-            btn.disabled = true;
+            const btn = document.getElementById('btn-get-location'); const originalText = btn.innerHTML;
+            btn.innerHTML = "取得中..."; btn.disabled = true;
             try { 
                 const pos = await getGPS(); 
                 if (addMap) { addMap.flyTo([pos.coords.latitude, pos.coords.longitude], 18, { animate: true }); } 
-                btn.innerHTML = "取得完了"; 
-                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000); 
+                btn.innerHTML = "取得完了"; setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000); 
             } 
             catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
         });
 
+        // ★ 新規スポットの追加処理 (画像圧縮と階数対応)
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const submitBtn = document.getElementById('submit-btn');
+
+            let finalHours = is24h ? "24時間営業" : document.getElementById('add-hours').value.trim();
+            if (!finalHours) { alert("利用可能時間を入力するか、「24時間営業」を選択してください。"); return; }
+            
+            // 座標チェック
+            const latVal = document.getElementById('add-lat').value;
+            const lngVal = document.getElementById('add-lng').value;
+            if (!latVal || !lngVal) { alert("地図を動かして場所を指定してください。"); return; }
+
+            submitBtn.disabled = true; submitBtn.innerText = "処理中...";
+            
+            let uploadedImageUrl = "";
             const fileInput = document.getElementById('add-image');
             
             if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                if (file.size > 5 * 1024 * 1024) {
-                    alert("画像サイズが大きすぎます。5MB以下の画像を選択してください。");
-                    return; 
-                }
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.innerText = "処理中...";
-            let uploadedImageUrl = "";
-            
-            if (fileInput.files.length > 0) {
                 try {
-                    submitBtn.innerText = "画像アップロード中...";
-                    const file = fileInput.files[0];
-                    const storageRef = ref(storage, 'spots/' + Date.now() + '_' + file.name);
-                    await uploadBytes(storageRef, file);
+                    submitBtn.innerText = "画像を圧縮・アップロード中...";
+                    const originalFile = fileInput.files[0];
+                    
+                    // ★ ブラウザ内で画像を圧縮
+                    const compressedBlob = await compressImage(originalFile, 1200); 
+                    
+                    // 圧縮したBlobをFirebase Storageにアップロード
+                    const storageRef = ref(storage, 'spots/' + Date.now() + '.jpg');
+                    await uploadBytes(storageRef, compressedBlob);
                     uploadedImageUrl = await getDownloadURL(storageRef);
                 } catch (err) {
-                    console.error("画像アップロード失敗:", err);
+                    console.error("画像処理失敗:", err);
                     alert("画像のアップロードに失敗しました。画像なしで登録を続行します。");
                 }
             }
+            
             submitBtn.innerText = "データ送信中...";
             const closedDaysArray = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
             const featuresArray = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
@@ -695,9 +746,10 @@
             const newSpot = { 
                 name: document.getElementById('add-name').value, 
                 placename: document.getElementById('add-placename').value, 
-                latitude: parseFloat(document.getElementById('add-lat').value), 
-                longitude: parseFloat(document.getElementById('add-lng').value), 
-                available_hours: document.getElementById('add-hours').value || "24時間営業", 
+                floor: document.getElementById('add-floor').value || "", // ★ 階数フィールド
+                latitude: parseFloat(latVal), 
+                longitude: parseFloat(lngVal), 
+                available_hours: finalHours, 
                 closed_days: closedDaysArray,
                 features: featuresArray,
                 imageUrl: uploadedImageUrl || null,
@@ -710,13 +762,15 @@
                 isFormDirty = false;
                 alert("登録申請を受け付けました！管理者の承認後にマップに反映されます。");
                 e.target.reset(); 
+                
+                is24h = false; document.getElementById('btn-24h').classList.remove('active');
+                document.getElementById('add-hours').disabled = false; document.getElementById('add-hours').placeholder = "例: 09:00 - 18:00";
+                
                 document.querySelector('[data-target="view-map"]').click();
             } catch (error) { 
-                console.error("エラー:", error);
-                alert("登録に失敗しました。"); 
+                console.error("エラー:", error); alert("登録に失敗しました。"); 
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "この内容で申請する"; 
+                submitBtn.disabled = false; submitBtn.innerText = "この内容で申請する"; 
             }
         });
 
@@ -725,47 +779,29 @@
             if (!currentDetailSpotId) return;
 
             const btn = document.getElementById('submit-comment-btn');
-            btn.disabled = true;
-            btn.innerText = "送信中...";
+            btn.disabled = true; btn.innerText = "送信中...";
 
             const name = document.getElementById('comment-name').value;
             const text = document.getElementById('comment-text').value;
 
             try {
-                await addDoc(collection(db, "spots", currentDetailSpotId, "comments"), {
-                    name: name,
-                    text: text,
-                    created_at: serverTimestamp()
-                });
-                
-                e.target.reset();
-                await loadComments(currentDetailSpotId);
-
-                btn.innerText = "送信完了";
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerText = "送信する";
-                }, 3000);
-
+                await addDoc(collection(db, "spots", currentDetailSpotId, "comments"), { name: name, text: text, created_at: serverTimestamp() });
+                e.target.reset(); await loadComments(currentDetailSpotId);
+                btn.innerText = "送信完了"; setTimeout(() => { btn.disabled = false; btn.innerText = "送信する"; }, 3000);
             } catch (err) {
-                console.error("コメント送信エラー:", err);
-                alert('コメントの送信に失敗しました。');
-                btn.disabled = false;
-                btn.innerText = "送信する";
+                console.error("コメント送信エラー:", err); alert('コメントの送信に失敗しました。');
+                btn.disabled = false; btn.innerText = "送信する";
             }
         });
 
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', () => {
-                navItems.forEach(n => n.classList.remove('active'));
-                item.classList.add('active');
+                navItems.forEach(n => n.classList.remove('active')); item.classList.add('active');
                 document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
                 
                 const targetId = item.dataset.target;
-                if (targetId !== 'view-detail') {
-                    previousView = targetId;
-                }
+                if (targetId !== 'view-detail') { previousView = targetId; }
                 
                 document.getElementById(targetId).classList.add('active');
                 if (targetId === 'view-map') setTimeout(() => map.invalidateSize(), 100);
