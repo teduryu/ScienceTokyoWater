@@ -26,7 +26,6 @@
             font-family: 'Hind', 'Noto Sans JP', sans-serif;
             margin: 0; padding: 0;
             background-color: var(--bg-color); color: var(--text-main);
-            /* ★ スマホ向けに上下のパディングを最適化 */
             padding-top: 60px; padding-bottom: calc(65px + env(safe-area-inset-bottom));
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
@@ -52,19 +51,24 @@
         .view-section.active { display: block; height: 100%; min-height: calc(100vh - 140px); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- マップ画面 --- */
+        /* --- マップ画面 & ポップアップ --- */
         #view-map.active { position: fixed; top: 0; left: 0; right: 0; bottom: 0; padding: 0; z-index: 10; }
         #map { width: 100%; height: 100%; z-index: 1; }
         .mapboxgl-ctrl-top-right { top: 65px !important; right: 10px !important; }
         .mapboxgl-ctrl-bottom-left { display: none !important; }
-        .mapboxgl-popup-content { border-radius: 12px; padding: 15px; box-shadow: 0 4px 16px rgba(28,49,119,0.15); font-family: 'Hind', 'Noto Sans JP', sans-serif; width: 220px; }
-        .mapboxgl-popup-close-button { font-size: 1.2rem; padding: 4px 8px; color: var(--text-sub); }
-
-        /* ★ 検索ボタンのコンパクト化と配置上げ */
-        .floating-ui-top { position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
-        .floating-btn { width: auto; padding: 8px 18px; font-size: 0.85rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; pointer-events: auto; font-weight: 700; }
         
-        /* ★ マップ下のカードリストを極限まで下げる */
+        /* コンパクトなポップアップデザイン */
+        .mapboxgl-popup-content { border-radius: 12px; padding: 12px; box-shadow: 0 4px 20px rgba(28,49,119,0.15); font-family: 'Hind', 'Noto Sans JP', sans-serif; width: 200px; }
+        .mapboxgl-popup-close-button { font-size: 1.2rem; padding: 4px 8px; color: var(--text-sub); outline: none; }
+        .custom-popup { display: flex; flex-direction: column; gap: 4px; }
+        .popup-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 600; }
+        .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--science-blue); line-height: 1.3; }
+        .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 8px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; margin-top: 4px; }
+        .popup-btn:active { background: var(--bg-darker); }
+
+        .floating-ui-top { position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
+        .floating-btn { width: auto; padding: 8px 18px; font-size: 0.85rem; border-radius: 30px; box-shadow: 0 4px 15px rgba(28, 49, 119, 0.3); white-space: nowrap; pointer-events: auto; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        
         .floating-ui-bottom { position: absolute; bottom: calc(65px + env(safe-area-inset-bottom)); left: 0; width: 100%; z-index: 1000; pointer-events: none; }
 
         .horizontal-scroll-list { 
@@ -96,34 +100,41 @@
         .btn-secondary { background: var(--science-sub); box-shadow: 0 4px 10px rgba(127, 150, 194, 0.3); }
 
         .controls { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .control-item { background: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.2s; }
+        .control-item { background: white; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; }
         .control-item.active { background: var(--science-blue); color: white; border-color: var(--science-blue); }
+        .status-dot { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; margin-right: 6px; }
+        .control-item.active .status-dot { background: white; }
 
         .section-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 12px 0; display: flex; justify-content: space-between; align-items: center; color: var(--science-blue); }
 
+        /* --- スポットカードのメタデータデザイン --- */
         .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(28, 49, 119, 0.04); position: relative; border: 1px solid var(--bg-darker); }
         .clickable-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
         .clickable-card:active { transform: scale(0.98); background-color: #f8fafc; }
+        
+        .spot-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+        .dist-badge { background: var(--bg-darker); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--science-blue); }
+        .closed-days { color: var(--accent-red); font-weight: 600; font-size: 0.85em; margin-left: 4px; }
 
         /* --- フォーム・特徴バッジ --- */
         form label { display: block; margin-top: 14px; margin-bottom: 6px; font-size: 0.85rem; color: var(--science-blue); font-weight: 700; }
         form input[type="text"], form input[type="number"], form input[type="file"], form textarea { width: 100%; padding: 10px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 0.95rem; background: white; }
         form input:focus, form textarea:focus { outline: none; border-color: var(--science-blue); box-shadow: 0 0 0 2px rgba(28, 49, 119, 0.1); }
-        .readonly-coords { background: var(--bg-color) !important; color: var(--text-sub) !important; text-align: center; border-color: var(--bg-darker) !important; font-size: 0.8rem !important; }
 
-        .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-darker); color: var(--science-blue); border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
+        .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-color); color: var(--science-sub); border: 1px solid var(--bg-darker); border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
         .feature-checkbox { display: none; }
         .feature-label { display: inline-block; padding: 6px 10px; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 8px; font-size: 0.85rem; color: var(--text-sub); cursor: pointer; transition: all 0.2s; user-select: none; font-weight: 500; }
         .feature-checkbox:checked + .feature-label { background: var(--science-blue); color: white; border-color: var(--science-blue); box-shadow: 0 2px 6px rgba(28,49,119,0.2); }
         .days-grid, .features-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 
         .add-map-container { position: relative; height: 180px; width: 100%; border-radius: 12px; overflow: hidden; border: 2px solid var(--science-sub); margin-bottom: 8px; }
-        .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); font-size: 2.2rem; z-index: 1000; pointer-events: none; text-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.1s; }
+        .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); transition: transform 0.1s; }
         .center-pin.moving { transform: translate(-50%, -120%); }
 
         /* --- 詳細ページ・コメント関連 --- */
         .detail-image { width: 100%; height: 220px; object-fit: contain; border-radius: 12px; margin-bottom: 15px; background-color: var(--bg-color); border: 1px solid var(--bg-darker); }
-        .detail-back-btn { background: none; border: none; color: var(--science-blue); font-size: 1.05rem; font-weight: bold; padding: 8px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .detail-back-btn { background: none; border: none; color: var(--science-sub); font-size: 1rem; font-weight: bold; padding: 8px 0; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: color 0.2s; }
+        .detail-back-btn:active { color: var(--science-blue); }
 
         .comment-item { background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--bg-darker); }
         .comment-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
@@ -132,7 +143,7 @@
         .comment-text { font-size: 0.85rem; white-space: pre-wrap; color: var(--text-main); line-height: 1.4; }
         #detail-comments-list { margin-bottom: 15px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
 
-        /* --- ★ フッターの極小化 (スマホで邪魔にならない設計) --- */
+        /* --- フッター --- */
         .bottom-nav { 
             position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.96); 
             backdrop-filter: blur(10px); display: flex; justify-content: space-around; 
@@ -149,21 +160,14 @@
         .nav-item.active { color: var(--science-blue); }
         .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
 
-        /* PC等でのサイズ調整 */
-        @media (min-width: 768px) {
-            .bottom-nav { padding: 12px 0 16px 0; }
-            .nav-item svg { width: 24px; height: 24px; }
-            .nav-item { font-size: 0.75rem; }
-            .floating-btn { padding: 10px 24px; font-size: 0.95rem; }
-        }
-
         .user-location-marker { background: var(--accent-red); width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.4); }
         .status-badge { position: absolute; top: 12px; right: 12px; padding: 3px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
         .status-open { background: #eef7f0; color: var(--accent-green); }
         .status-closed { background: #fdf0f0; color: var(--accent-red); }
         .spot-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 700; line-height: 1.2; }
-        .spot-title { font-size: 1rem; font-weight: 700; margin: 4px 0 6px 0; color: var(--text-main); line-height: 1.3; }
-        .spot-distance { font-size: 0.8rem; color: var(--text-sub); line-height: 1.5; }
+        .spot-title { font-size: 1rem; font-weight: 700; margin: 4px 0 6px 0; color: var(--text-main); line-height: 1.3; display: flex; align-items: center; gap: 6px; }
+        
+        .camera-icon { width: 14px; height: 14px; color: var(--science-sub); }
     </style>
 </head>
 <body>
@@ -175,7 +179,12 @@
 
     <div id="view-map" class="view-section active">
         <div id="map"></div>
-        <div class="floating-ui-top"><button id="gps-btn" class="btn-large floating-btn">📍 近くを検索</button></div>
+        <div class="floating-ui-top">
+            <button id="gps-btn" class="btn-large floating-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                現在地周辺を検索
+            </button>
+        </div>
         <div class="floating-ui-bottom"><div id="map-visible-list" class="horizontal-scroll-list"></div></div>
     </div>
 
@@ -183,15 +192,15 @@
         <h2 class="section-title">スポット一覧</h2>
         <div class="controls">
             <select id="sort-select" class="control-item"><option value="default">名前順</option><option value="distance">現在地に近い順</option></select>
-            <div id="filter-open" class="control-item">🟢 営業中のみ</div>
+            <div id="filter-open" class="control-item"><span class="status-dot"></span>営業中のみ</div>
         </div>
-        <div id="full-spot-list"><p style="text-align: center; color: var(--text-sub); font-size: 0.9rem;">データを読み込み中...</p></div>
+        <div id="full-spot-list"><p style="text-align: center; color: var(--text-sub); font-size: 0.9rem;">読み込み中...</p></div>
     </div>
 
     <div class="container view-section" id="view-add">
         <h2 class="section-title">新規スポットの追加</h2>
         <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 15px;">
-            まだマップに載っていない給水スポットを見つけたら、ぜひ登録して共有してください！<br>
+            見つけた給水スポットを登録して共有しましょう。<br>
             <span style="color:var(--accent-red); font-weight:bold;">※管理者の承認後にマップに表示されます。</span>
         </p>
         
@@ -203,23 +212,23 @@
                 <label>建物・エリア名 (必須)</label>
                 <input type="text" id="add-placename" required placeholder="例: 本館">
 
-                <label>場所の指定 (地図をスワイプしてピンを合わせる)</label>
+                <label>場所の指定 (地図を動かしてピンを合わせる)</label>
                 <div class="add-map-container">
                     <div id="add-map" style="width: 100%; height: 100%; z-index: 1;"></div>
-                    <div id="center-pin" class="center-pin">📍</div>
+                    <div id="center-pin" class="center-pin">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="var(--accent-red)" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>
+                    </div>
                 </div>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="add-lat" step="0.000001" required placeholder="緯度" readonly class="readonly-coords">
-                    <input type="number" id="add-lng" step="0.000001" required placeholder="経度" readonly class="readonly-coords">
-                </div>
-                <button type="button" id="btn-get-location" class="btn-large btn-secondary" style="margin-top:10px; font-size: 0.85rem;">🎯 現在地に合わせる</button>
+                <input type="hidden" id="add-lat" required>
+                <input type="hidden" id="add-lng" required>
+                <button type="button" id="btn-get-location" class="btn-large btn-secondary" style="margin-top:8px; font-size: 0.85rem;">現在地を取得</button>
 
                 <label>特徴 (複数選択可)</label>
                 <div class="features-grid">
-                    <input type="checkbox" id="f1" name="features" value="冷水" class="feature-checkbox"><label for="f1" class="feature-label">💧 冷水</label>
-                    <input type="checkbox" id="f2" name="features" value="お湯" class="feature-checkbox"><label for="f2" class="feature-label">♨️ お湯</label>
-                    <input type="checkbox" id="f3" name="features" value="お茶" class="feature-checkbox"><label for="f3" class="feature-label">🍵 お茶</label>
-                    <input type="checkbox" id="f4" name="features" value="紙コップ" class="feature-checkbox"><label for="f4" class="feature-label">🥤 紙コップ</label>
+                    <input type="checkbox" id="f1" name="features" value="冷水" class="feature-checkbox"><label for="f1" class="feature-label">冷水</label>
+                    <input type="checkbox" id="f2" name="features" value="お湯" class="feature-checkbox"><label for="f2" class="feature-label">お湯</label>
+                    <input type="checkbox" id="f3" name="features" value="お茶" class="feature-checkbox"><label for="f3" class="feature-label">お茶</label>
+                    <input type="checkbox" id="f4" name="features" value="紙コップ" class="feature-checkbox"><label for="f4" class="feature-label">紙コップ</label>
                 </div>
 
                 <label>利用可能時間</label>
@@ -240,31 +249,32 @@
                 <label>画像 (5MB以下 / 任意)</label>
                 <input type="file" id="add-image" accept="image/*">
 
-                <button type="submit" id="submit-btn" class="btn-large" style="margin-top:20px;">➕ この内容で申請する</button>
+                <button type="submit" id="submit-btn" class="btn-large" style="margin-top:20px;">この内容で申請する</button>
             </form>
         </div>
     </div>
 
     <div id="view-detail" class="view-section">
         <div class="container">
-            <button class="detail-back-btn" onclick="goBack()">← 戻る</button>
+            <button class="detail-back-btn" onclick="goBack()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                戻る
+            </button>
             <div class="spot-card" style="margin-bottom: 30px;">
                 <img id="detail-image" class="detail-image" src="" alt="スポット画像" style="display:none;">
-                <div id="detail-placename" class="spot-placename" style="font-size: 0.85rem;">📍</div>
+                <div id="detail-placename" class="spot-placename" style="font-size: 0.85rem;"></div>
                 <h2 id="detail-title" class="spot-title" style="font-size: 1.4rem; margin-bottom: 8px;"></h2>
                 <div id="detail-features" style="margin-bottom: 12px;"></div>
-                <div id="detail-hours" class="spot-distance" style="font-size: 0.95rem;"></div>
-                <div id="detail-closed" class="spot-distance" style="font-size: 0.95rem; margin-bottom: 10px;"></div>
+                <div id="detail-meta" class="spot-meta" style="font-size: 0.95rem; margin-bottom: 10px;"></div>
                 
-                <button class="btn-large" onclick="flyToSpotFromDetail()" style="margin-top: 16px;">🗺️ 地図で見る</button>
+                <button class="btn-large btn-secondary" onclick="flyToSpotFromDetail()" style="margin-top: 16px; color: var(--science-blue); background: var(--bg-color); border: 1px solid var(--bg-darker);">地図で確認する</button>
                 
-                <div id="detail-comments-section" style="margin-top: 25px; border-top: 1px solid var(--bg-darker); padding-top: 16px;">
-                    <h3 style="font-size: 1rem; color: var(--science-blue); margin-bottom: 12px;">💬 コメント</h3>
-                    <div id="detail-comments-list">
-                        </div>
+                <div id="detail-comments-section" style="margin-top: 25px; border-top: 2px solid var(--bg-color); padding-top: 16px;">
+                    <h3 style="font-size: 1rem; color: var(--science-blue); margin-bottom: 12px;">コメント</h3>
+                    <div id="detail-comments-list"></div>
                     <form id="add-comment-form" style="display: flex; flex-direction: column; gap: 8px;">
                         <input type="text" id="comment-name" placeholder="お名前 (省略可)">
-                        <textarea id="comment-text" required placeholder="スポットに関するコメントを入力..." style="resize: vertical; min-height: 60px;"></textarea>
+                        <textarea id="comment-text" required placeholder="コメントを入力..." style="resize: vertical; min-height: 60px;"></textarea>
                         <button type="submit" id="submit-comment-btn" class="btn-large" style="padding: 10px; font-size: 0.9rem; border-radius: 8px;">送信する</button>
                     </form>
                 </div>
@@ -275,28 +285,19 @@
     <div class="bottom-nav">
         <div class="nav-item active" data-target="view-map">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
-                <line x1="9" y1="3" x2="9" y2="21"></line>
-                <line x1="15" y1="3" x2="15" y2="21"></line>
+                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line>
             </svg>
             <span>マップ</span>
         </div>
         <div class="nav-item" data-target="view-list">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="8" y1="6" x2="21" y2="6"></line>
-                <line x1="8" y1="12" x2="21" y2="12"></line>
-                <line x1="8" y1="18" x2="21" y2="18"></line>
-                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                <line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>
             </svg>
             <span>リスト</span>
         </div>
         <div class="nav-item" data-target="view-add">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="16"></line>
-                <line x1="8" y1="12" x2="16" y2="12"></line>
+                <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
             </svg>
             <span>追加</span>
         </div>
@@ -324,9 +325,8 @@
         const storage = getStorage(app);
 
         // ==========================================
-        // ★ Mapboxのアクセストークン
-        // ==========================================
         mapboxgl.accessToken = 'pk.eyJ1IjoidGVkdXJ1dSIsImEiOiJjbW5zd3VrZjAwZ21yMnBxeXo0bHdsbXV4In0.CrfX77lwGGqZUcecqEshMA';
+        // ==========================================
         
         const map = new mapboxgl.Map({
             container: 'map', style: 'mapbox://styles/mapbox/standard',
@@ -348,10 +348,7 @@
 
         const scrollList = document.getElementById("map-visible-list");
         scrollList.addEventListener('wheel', (e) => {
-            if (e.deltaY !== 0) {
-                e.preventDefault(); 
-                scrollList.scrollBy({ left: e.deltaY < 0 ? -150 : 150, behavior: 'smooth' });
-            }
+            if (e.deltaY !== 0) { e.preventDefault(); scrollList.scrollBy({ left: e.deltaY < 0 ? -150 : 150, behavior: 'smooth' }); }
         });
 
         function escapeHTML(str) {
@@ -371,7 +368,7 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        function formatDistance(meters) { return meters < 1000 ? `約${Math.round(meters)}m` : `約${(meters / 1000).toFixed(1)}km`; }
+        function formatDistance(meters) { return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`; }
 
         function isOpen(spot) {
             const hoursStr = spot.available_hours || "24時間営業";
@@ -394,12 +391,12 @@
         function getClosedDaysText(closed) {
             if (!closed || closed.length === 0) return "";
             const dayNames = ["日", "月", "火", "水", "木", "金", "土", "祝"];
-            return ` <span style="color:var(--accent-red); font-weight:bold;">(休: ${closed.map(d => dayNames[d]).join(',')})</span>`;
+            return `<span class="closed-days">休: ${closed.map(d => dayNames[d]).join(',')}</span>`;
         }
 
         async function loadComments(spotId) {
             const commentsListEl = document.getElementById('detail-comments-list');
-            commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--text-sub);">コメントを読み込み中...</p>';
+            commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--text-sub);">読み込み中...</p>';
             try {
                 const qSnap = await getDocs(collection(db, "spots", spotId, "comments"));
                 let comments = [];
@@ -412,7 +409,7 @@
                 });
 
                 if (comments.length === 0) {
-                    commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--text-sub);">まだコメントはありません。最初のコメントを書き込もう！</p>';
+                    commentsListEl.innerHTML = '<p style="font-size:0.85rem; color:var(--text-sub);">まだコメントはありません。</p>';
                     return;
                 }
 
@@ -454,9 +451,11 @@
             if (!spot) return;
             
             document.getElementById('detail-title').innerText = spot.name;
-            document.getElementById('detail-placename').innerText = "📍 " + (spot.placename || "場所未設定");
-            document.getElementById('detail-hours').innerText = "🕒 " + (spot.available_hours || "24時間営業");
-            document.getElementById('detail-closed').innerHTML = getClosedDaysText(spot.closed_days);
+            document.getElementById('detail-placename').innerText = escapeHTML(spot.placename) || "場所未設定";
+            
+            const hoursStr = escapeHTML(spot.available_hours) || "24時間営業";
+            const closedStr = getClosedDaysText(spot.closed_days);
+            document.getElementById('detail-meta').innerHTML = `<span>${hoursStr}</span>${closedStr}`;
             
             const imgEl = document.getElementById('detail-image');
             if (spot.imageUrl) { imgEl.src = spot.imageUrl; imgEl.style.display = 'block'; }
@@ -477,19 +476,19 @@
 
         function createCard(spot, onClickAction) {
             const openStatus = isOpen(spot);
-            const distText = spot.distance ? `📏 ${formatDistance(spot.distance)}<br>` : "";
+            const distText = spot.distance ? `<span class="dist-badge">${formatDistance(spot.distance)}</span>` : "";
             const closedText = getClosedDaysText(spot.closed_days);
             const featuresHtml = (spot.features || []).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
-            const imgIcon = spot.imageUrl ? ` <span style="font-size:0.8rem;">📸</span>` : '';
+            const imgIcon = spot.imageUrl ? `<svg class="camera-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>` : '';
             const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
 
             return `
                 <div class="spot-card clickable-card" onclick="${onClickAction}('${spot.id}')">
                     <span class="status-badge ${openStatus ? 'status-open' : 'status-closed'}">${openStatus ? '営業中' : '時間外'}</span>
-                    <div class="spot-placename">📍 ${escapeHTML(spot.placename) || "場所未設定"}</div>
-                    <div class="spot-title">${escapeHTML(spot.name)}${imgIcon}</div>
+                    <div class="spot-placename">${escapeHTML(spot.placename) || "場所未設定"}</div>
+                    <div class="spot-title">${escapeHTML(spot.name)} ${imgIcon}</div>
                     <div style="margin-bottom: 8px;">${featuresHtml}</div>
-                    <div class="spot-distance">${distText}🕒 ${safeHours}${closedText}</div>
+                    <div class="spot-meta">${distText}<span>${safeHours}</span>${closedText}</div>
                 </div>
             `;
         }
@@ -498,7 +497,7 @@
             const container = document.getElementById("map-visible-list");
             const bounds = map.getBounds();
             const visibleSpots = allSpots.filter(s => bounds.contains([s.longitude, s.latitude]));
-            container.innerHTML = visibleSpots.length > 0 ? visibleSpots.map(s => createCard(s, 'flyToSpot')).join('') : `<div class="empty-message-pill">このエリアには給水スポットがありません💧</div>`;
+            container.innerHTML = visibleSpots.length > 0 ? visibleSpots.map(s => createCard(s, 'flyToSpot')).join('') : `<div class="empty-message-pill">このエリアに見つかりませんでした</div>`;
         }
 
         function updateFullList() {
@@ -515,7 +514,7 @@
                 displaySpots.sort((a, b) => a.name.localeCompare(b.name, 'ja')); 
             }
             
-            container.innerHTML = displaySpots.map(s => createCard(s, 'showDetail')).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません💧</p>";
+            container.innerHTML = displaySpots.map(s => createCard(s, 'showDetail')).join('') || "<p style='text-align:center; padding: 20px; color:var(--text-sub);'>条件に合うスポットがありません</p>";
 
             allSpots.forEach(spot => {
                 const isVisible = filterOpenOnly ? isOpen(spot) : true;
@@ -531,11 +530,15 @@
             const safePlacename = escapeHTML(spot.placename) || "場所未設定";
             const safeName = escapeHTML(spot.name);
             const safeHours = escapeHTML(spot.available_hours) || "24時間営業";
+            
+            // ★ ポップアップのコンパクト化・絵文字削除
             const popupHtml = `
-                <div style="font-size:0.85em; color:var(--science-sub); margin-bottom:2px;">📍 ${safePlacename}</div>
-                <b style="font-size:1.1em; color:var(--science-blue);">${safeName}</b><br>
-                <div style="margin-top:6px; margin-bottom: 12px;">🕒 ${safeHours}${getClosedDaysText(spot.closed_days)}</div>
-                <button onclick="showDetail('${spot.id}')" style="width:100%; padding:8px; border:none; background:var(--bg-darker); color:var(--science-blue); border-radius:6px; font-weight:bold; cursor:pointer;">詳細を見る ＞</button>
+                <div class="custom-popup">
+                    <div class="popup-placename">${safePlacename}</div>
+                    <div class="popup-title">${safeName}</div>
+                    <div class="spot-meta" style="margin-bottom:8px;"><span>${safeHours}</span>${getClosedDaysText(spot.closed_days)}</div>
+                    <button class="popup-btn" onclick="showDetail('${spot.id}')">詳細を見る</button>
+                </div>
             `;
             const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml);
             const marker = new mapboxgl.Marker({ color: 'var(--science-blue)' }).setLngLat([spot.longitude, spot.latitude]).setPopup(popup).addTo(map);
@@ -564,27 +567,38 @@
         document.getElementById("sort-select").addEventListener('change', async (e) => {
             if (e.target.value === "distance" && !userLocation) {
                 const wantGps = confirm("距離順で並び替えるには、現在地の取得が必要です。現在地を取得しますか？");
-                if (wantGps) {
-                    document.getElementById('gps-btn').click(); 
-                } else {
-                    e.target.value = "default"; 
-                }
-            } else {
-                updateFullList();
-            }
+                if (wantGps) { document.getElementById('gps-btn').click(); } 
+                else { e.target.value = "default"; }
+            } else { updateFullList(); }
         });
 
-        document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.target.classList.toggle('active'); updateFullList(); });
+        document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.currentTarget.classList.toggle('active'); updateFullList(); });
+        
         function getGPS() { return new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 })); }
 
-        // 検索ボタン (メインマップ画面)
+        // --- ★ GPSエラーバグの完全修正 ---
         document.getElementById('gps-btn').addEventListener('click', async () => {
             if (!navigator.geolocation) return alert("現在地取得に対応していません。");
-            const btn = document.getElementById('gps-btn'); const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ 測位中..."; btn.disabled = true;
+            const btn = document.getElementById('gps-btn'); 
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = "測位中..."; 
+            btn.disabled = true;
+
+            let pos;
+            // 1. 位置情報の取得のみを分離してエラーハンドリング
             try {
-                const pos = await getGPS();
-                btn.innerHTML = originalText; btn.disabled = false;
+                pos = await getGPS();
+            } catch(err) { 
+                btn.innerHTML = originalHTML; 
+                btn.disabled = false; 
+                alert("現在地を取得できませんでした。端末の位置情報設定を確認してください。");
+                return; // ここで処理を終了する
+            }
+
+            // 2. 取得成功後の処理（ここでエラーが起きてもGPS失敗のアラートは出ない）
+            try {
+                btn.innerHTML = originalHTML; 
+                btn.disabled = false;
                 userLocation = [pos.coords.longitude, pos.coords.latitude];
                 if (userMarker) userMarker.remove();
                 const el = document.createElement('div'); el.className = 'user-location-marker';
@@ -596,7 +610,9 @@
                 else { map.flyTo({ center: userLocation, zoom: 17 }); }
                 updateFullList();
                 const sortSelect = document.getElementById("sort-select"); if(sortSelect.value === "default") { sortSelect.value = "distance"; updateFullList(); }
-            } catch(err) { btn.innerHTML = originalText; btn.disabled = false; alert("現在地を取得できませんでした。"); }
+            } catch(err) { 
+                console.error("GPS取得後の内部エラー:", err); 
+            }
         });
 
         function initAddMap() {
@@ -612,9 +628,15 @@
 
         document.getElementById('btn-get-location').addEventListener('click', async () => {
             const btn = document.getElementById('btn-get-location'); const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ 取得中..."; btn.disabled = true;
-            try { const pos = await getGPS(); if (addMap) { addMap.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 18 }); } btn.innerHTML = "✅ 取得完了！"; setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000); } 
-            catch(err) { alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; }
+            btn.innerHTML = "取得中..."; btn.disabled = true;
+            try { 
+                const pos = await getGPS(); 
+                if (addMap) { addMap.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 18 }); } 
+                btn.innerHTML = "取得完了"; 
+                setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 2000); 
+            } catch(err) { 
+                alert("位置情報を取得できませんでした。"); btn.innerHTML = originalText; btn.disabled = false; 
+            }
         });
 
         // 新規スポットの追加処理
@@ -632,12 +654,12 @@
             }
 
             submitBtn.disabled = true;
-            submitBtn.innerText = "⏳ 処理中...";
+            submitBtn.innerText = "処理中...";
             let uploadedImageUrl = "";
             
             if (fileInput.files.length > 0) {
                 try {
-                    submitBtn.innerText = "📸 画像アップロード中...";
+                    submitBtn.innerText = "画像アップロード中...";
                     const file = fileInput.files[0];
                     const storageRef = ref(storage, 'spots/' + Date.now() + '_' + file.name);
                     await uploadBytes(storageRef, file);
@@ -647,7 +669,7 @@
                     alert("画像のアップロードに失敗しました。画像なしで登録を続行します。");
                 }
             }
-            submitBtn.innerText = "⏳ データ送信中...";
+            submitBtn.innerText = "データ送信中...";
             const closedDaysArray = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
             const featuresArray = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
 
@@ -667,7 +689,7 @@
             try { 
                 await addDoc(collection(db, "spots"), newSpot);
                 isFormDirty = false;
-                alert("登録申請を受け付けました！管理者の承認後にマップに反映されます。✨");
+                alert("登録申請を受け付けました！管理者の承認後にマップに反映されます。");
                 e.target.reset(); 
                 document.querySelector('[data-target="view-map"]').click();
             } catch (error) { 
@@ -675,7 +697,7 @@
                 alert("登録に失敗しました。"); 
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerText = "➕ この内容で申請する"; 
+                submitBtn.innerText = "この内容で申請する"; 
             }
         });
 
