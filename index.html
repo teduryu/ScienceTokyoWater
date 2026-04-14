@@ -6,133 +6,166 @@
     <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1c3177">
+    <meta name="theme-color" content="#007AFF">
     <title>ScienceTokyoWater</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
     <style>
         :root {
-            --science-blue: #1c3177; --science-sub: #7f96c2; --bg-color: #f2f4f9;
-            --bg-darker: #e8eaf1; --accent-red: #f02b2b; --accent-green: #2b9e4a;
-            --card-bg: #FFFFFF; --text-main: #222222; --text-sub: #707070;
-            --pin-hot: #f02b2b; --pin-machine: #1c3177; --pin-tap: #00a8ff; --pin-default: #7f96c2;
+            /* 新しいカラーパレット */
+            --primary: #007AFF;
+            --primary-hover: #005bb5;
+            --primary-light: #E5F1FF;
+            --bg-base: #F2F4F7;
+            --surface: #FFFFFF;
+            --text-main: #1C1C1E;
+            --text-sub: #8E8E93;
+            --danger: #FF3B30;
+            --danger-bg: #FFEBEA;
+            --success: #34C759;
+            --success-bg: #EAF9EC;
+            --border: #E5E5EA;
+            
+            /* ピンの色 */
+            --pin-hot: #FF3B30;
+            --pin-machine: #007AFF;
+            --pin-tap: #34C759;
+            --pin-default: #8E8E93;
         }
 
+        /* ---------------- 基盤設定 ---------------- */
         body {
-            font-family: 'Hind', 'Noto Sans JP', sans-serif; margin: 0; padding: 0;
-            background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0;
+            background-color: var(--bg-base); color: var(--text-main);
             padding-top: 60px; padding-bottom: calc(70px + env(safe-area-inset-bottom));
             -webkit-font-smoothing: antialiased; overflow-x: hidden; -webkit-tap-highlight-color: transparent;
         }
+        * { box-sizing: border-box; }
 
+        /* ---------------- ユーティリティクラス ---------------- */
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .flex-center { display: flex; justify-content: center; align-items: center; }
+        .gap-sm { gap: 8px; } .gap-md { gap: 16px; }
+        .mb-sm { margin-bottom: 8px; } .mb-md { margin-bottom: 16px; } .mb-lg { margin-bottom: 24px; }
+        .mt-md { margin-top: 16px; } .mt-lg { margin-top: 24px; }
+        .text-center { text-align: center; }
+        .text-sub { color: var(--text-sub); font-size: 0.85rem; }
+        .text-danger { color: var(--danger); font-weight: bold; }
+        .w-full { width: 100%; }
+
+        /* ---------------- ヘッダー ---------------- */
         header {
             background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
             display: flex; align-items: center; justify-content: center;
             height: 60px; font-size: 1.15rem; font-weight: 700;
-            color: var(--science-blue); position: fixed; top: 0; left: 0; right: 0;
-            z-index: 2000; box-shadow: 0 1px 0 rgba(28, 49, 119, 0.1); letter-spacing: 0.02em; user-select: none;
+            color: var(--primary); position: fixed; top: 0; left: 0; right: 0;
+            z-index: 2000; box-shadow: 0 1px 0 var(--border); user-select: none;
         }
         .header-logo { width: 24px; height: 24px; margin-right: 8px; object-fit: contain; border-radius: 4px; }
 
+        /* ---------------- レイアウト ---------------- */
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         .view-section { display: none; animation: fadeIn 0.3s ease; }
         .view-section.active { display: block; height: 100%; min-height: calc(100vh - 140px); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 16px 0; color: var(--primary); }
+        .divider { border-top: 1px solid var(--border); margin: 24px 0; }
 
-        /* マップ関連 */
+        /* ---------------- マップ ---------------- */
         #view-map.active { position: fixed; top: 0; left: 0; right: 0; bottom: 0; padding: 0; z-index: 10; }
         #map { width: 100%; height: 100%; z-index: 1; background-color: #e5e3df; }
         .leaflet-top { top: 65px !important; }
-        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 8px 24px rgba(28,49,119,0.15); }
-        .leaflet-popup-content { margin: 14px; font-family: 'Hind', 'Noto Sans JP', sans-serif; width: 220px !important; }
-        .leaflet-container a.leaflet-popup-close-button { color: var(--text-sub); top: 8px; right: 8px; font-size: 1.2rem; padding: 4px; }
         
-        .custom-popup { display: flex; flex-direction: column; gap: 4px; }
-        .popup-placename { font-size: 0.75rem; color: var(--science-sub); font-weight: 600; display: flex; gap:4px; align-items: center; line-height: 1.2; }
-        .popup-floor { background: var(--bg-color); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; color: var(--science-blue); font-weight: 700; border: 1px solid var(--bg-darker); white-space: nowrap; }
-        .popup-title { font-size: 1.05rem; font-weight: 800; color: var(--science-blue); line-height: 1.3; margin-bottom: 2px; }
-        .popup-btn { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); font-weight: 700; padding: 10px; border-radius: 8px; cursor: pointer; transition: background 0.2s ease; font-size: 0.85rem; margin-top: 6px; width: 100%; }
+        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .leaflet-popup-content { margin: 14px; font-family: 'Noto Sans JP', sans-serif; width: 220px !important; }
+        .custom-popup { display: flex; flex-direction: column; gap: 6px; }
+        .popup-placename { font-size: 0.75rem; color: var(--text-sub); font-weight: 600; display: flex; gap:4px; align-items: center; }
+        .popup-floor { background: var(--bg-base); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; color: var(--primary); font-weight: 700; border: 1px solid var(--border); }
+        .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
+        .popup-btn { background: var(--primary-light); color: var(--primary); font-weight: 700; padding: 10px; border-radius: 8px; cursor: pointer; border: none; width: 100%; margin-top: 8px; }
 
-        .custom-pin { filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); display: flex; align-items: center; justify-content: center; }
+        .custom-pin { filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25)); display: flex; align-items: center; justify-content: center; }
         .custom-pin svg { width: 100%; height: 100%; }
 
         .floating-ui-top { position: absolute; top: 76px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
-        .floating-btn { width: auto; padding: 10px 20px; font-size: 0.85rem; border-radius: 30px; box-shadow: 0 6px 16px rgba(28, 49, 119, 0.25); white-space: nowrap; pointer-events: auto; font-weight: 700; display: flex; align-items: center; gap: 6px; background: var(--science-blue); color: white; border: none; cursor: pointer;}
+        .floating-btn { background: var(--primary); color: white; padding: 10px 20px; font-size: 0.9rem; border-radius: 30px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); border: none; font-weight: 700; display: flex; align-items: center; gap: 8px; pointer-events: auto; cursor: pointer; white-space: nowrap; }
         
         .floating-ui-bottom { position: absolute; bottom: calc(75px + env(safe-area-inset-bottom)); left: 0; width: 100%; z-index: 1000; pointer-events: none; }
         .horizontal-scroll-list { pointer-events: auto; display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px 20px 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
         .horizontal-scroll-list::-webkit-scrollbar { display: none; }
-        #map-visible-list .spot-card { pointer-events: auto; flex: 0 0 85%; scroll-snap-align: center; margin-bottom: 0; padding: 14px; border-radius: 16px; max-width: 320px; }
-        .empty-message-pill { pointer-events: auto; background: rgba(255,255,255,0.98); padding: 12px 24px; border-radius: 30px; margin: 0 auto; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); box-shadow: 0 8px 20px rgba(28, 49, 119, 0.1); border: 1px solid var(--bg-darker); }
+        #map-visible-list .spot-card { flex: 0 0 85%; scroll-snap-align: center; margin-bottom: 0; }
+        .empty-message-pill { background: rgba(255,255,255,0.95); padding: 12px 24px; border-radius: 30px; margin: 0 auto; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid var(--border); pointer-events: auto; }
 
-        /* 共通ボタン・UI */
-        .btn-large { pointer-events: auto; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--science-blue); color: white; border: none; padding: 14px; font-size: 0.95rem; border-radius: 12px; cursor: pointer; font-weight: 700; font-family: inherit; transition: background 0.2s ease; }
-        .btn-large:active { background: #15265b; }
-        .btn-large:disabled { background: var(--science-sub); cursor: not-allowed; }
-        .btn-secondary { background: var(--bg-color); border: 1px solid var(--bg-darker); color: var(--science-blue); box-shadow: none; }
-        .btn-small { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; color: white;}
-
-        .controls { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-        .control-item { background: white; padding: 10px 16px; border-radius: 30px; font-size: 0.85rem; border: 1px solid var(--science-sub); color: var(--science-blue); cursor: pointer; font-family: inherit; font-weight: 600; display: flex; align-items: center; justify-content: center;}
-        .control-item.active { background: var(--science-blue); color: white; border-color: var(--science-blue); }
-
-        .section-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 16px 0; color: var(--science-blue); }
-
-        /* スポットカード */
-        .spot-card { background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(28, 49, 119, 0.06); position: relative; border: 1px solid var(--bg-darker); }
+        /* ---------------- カードUI ---------------- */
+        .spot-card { background-color: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; border: 1px solid var(--border); }
         .clickable-card { cursor: pointer; transition: background-color 0.2s ease; }
-        .spot-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-        .dist-badge { background: var(--bg-darker); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--science-blue); }
-        .closed-days { color: var(--accent-red); font-weight: 600; font-size: 0.85em; }
-        .status-badge { position: absolute; top: 16px; right: 16px; padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; }
-        .status-open { background: #eef7f0; color: var(--accent-green); }
-        .status-closed { background: #fdf0f0; color: var(--accent-red); }
-        .spot-title { font-size: 1.1rem; font-weight: 800; margin: 4px 0 6px 0; color: var(--text-main); line-height: 1.3; display: flex; align-items: center; gap: 6px; }
-
-        /* フォーム */
-        form label { display: block; margin-top: 20px; margin-bottom: 8px; font-size: 0.85rem; color: var(--science-blue); font-weight: 700; }
-        form input[type="text"], form input[type="file"], form textarea, select { width: 100%; padding: 12px; border: 1px solid var(--science-sub); border-radius: 8px; font-family: inherit; box-sizing: border-box; font-size: 0.95rem; background: white; }
-        .input-group { display: flex; gap: 8px; }
-
-        .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-color); color: var(--science-sub); border: 1px solid var(--bg-darker); border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
-        .feature-checkbox, .day-checkbox { display: none; }
-        .feature-label { display: inline-block; padding: 8px 12px; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 8px; font-size: 0.85rem; color: var(--text-sub); cursor: pointer; font-weight: 600; }
-        .feature-checkbox:checked + .feature-label { background: var(--science-blue); color: white; border-color: var(--science-blue); }
-        .features-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .clickable-card:active { background-color: var(--bg-base); }
         
-        .days-grid { display: flex; flex-wrap: nowrap; gap: 4px; margin-bottom: 12px; width: 100%; }
-        .day-label { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px 0; background: var(--bg-color); border: 1px solid var(--bg-darker); border-radius: 6px; font-size: 0.8rem; color: var(--text-sub); cursor: pointer; font-weight: 600;}
-        .day-checkbox:checked + .day-label { background: var(--science-blue); color: white; border-color: var(--science-blue); }
+        .status-badge { position: absolute; top: 16px; right: 16px; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+        .status-open { background: var(--success-bg); color: var(--success); }
+        .status-closed { background: var(--danger-bg); color: var(--danger); }
+        
+        .spot-title { font-size: 1.1rem; font-weight: 700; margin: 4px 0 8px 0; color: var(--text-main); line-height: 1.4; }
+        .spot-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .dist-badge { background: var(--primary-light); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--primary); }
 
-        .add-map-container { position: relative; height: 200px; width: 100%; border-radius: 12px; overflow: hidden; border: 2px solid var(--science-sub); margin-bottom: 8px; background-color: #e5e3df; }
-        .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3)); transition: transform 0.1s; }
+        .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-base); color: var(--text-sub); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
+
+        /* ---------------- ボタン・コントロール ---------------- */
+        .btn-large { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--primary); color: white; border: none; padding: 16px; font-size: 1rem; border-radius: 12px; cursor: pointer; font-weight: 700; transition: opacity 0.2s; }
+        .btn-large:active { opacity: 0.8; }
+        .btn-large:disabled { background: var(--border); color: var(--text-sub); cursor: not-allowed; }
+        .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); }
+        .btn-danger-outline { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+        .btn-small { padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; color: white; background: var(--text-sub); }
+
+        .controls-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .control-chip { background: var(--surface); padding: 10px 16px; border-radius: 30px; font-size: 0.85rem; border: 1px solid var(--border); color: var(--text-main); cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+        .control-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+        select.control-chip { appearance: none; padding-right: 32px; background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" stroke="%231C1C1E" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; }
+
+        /* ---------------- フォーム ---------------- */
+        form label { display: block; margin: 20px 0 8px 0; font-size: 0.9rem; color: var(--text-main); font-weight: 700; }
+        form input[type="text"], form input[type="file"], form textarea, select.form-select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--bg-base); color: var(--text-main); outline: none; }
+        form input:focus, form textarea:focus { border-color: var(--primary); background: var(--surface); }
+        
+        .input-row { display: flex; gap: 8px; }
+        .checkbox-hidden { display: none; }
+        .selectable-label { display: inline-block; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); cursor: pointer; font-weight: 600; text-align: center; }
+        .checkbox-hidden:checked + .selectable-label { background: var(--primary); color: white; border-color: var(--primary); }
+        
+        .features-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .days-grid { display: flex; width: 100%; gap: 4px; }
+        .days-grid .selectable-label { flex: 1; padding: 10px 0; font-size: 0.8rem; }
+
+        .add-map-container { position: relative; height: 200px; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background-color: #e5e3df; margin-bottom: 8px; }
+        .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25)); transition: transform 0.1s; }
         .center-pin.moving { transform: translate(-50%, -120%); }
 
-        /* 詳細ページ */
-        .detail-image { width: 100%; height: 240px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; background-color: var(--bg-color); border: 1px solid var(--bg-darker); }
-        .detail-back-btn { background: none; border: none; color: var(--text-sub); font-size: 1.05rem; font-weight: bold; padding: 8px 0; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        /* ---------------- 詳細ページ ---------------- */
+        .detail-image { width: 100%; height: 240px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; background-color: var(--bg-base); border: 1px solid var(--border); }
+        .detail-back-btn { background: none; border: none; color: var(--primary); font-size: 1rem; font-weight: 700; padding: 8px 0; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         
-        .comment-item { background: var(--bg-color); padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--bg-darker); }
-        .comment-header { display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center; }
-        .comment-name { font-size: 0.85rem; font-weight: 700; color: var(--science-blue); }
-        .comment-date { font-size: 0.7rem; color: var(--text-sub); }
-        .comment-text { font-size: 0.9rem; white-space: pre-wrap; color: var(--text-main); line-height: 1.5; }
-        #detail-comments-list { margin-bottom: 20px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
+        .comment-item { background: var(--bg-base); padding: 16px; border-radius: 12px; margin-bottom: 12px; }
+        .comment-header { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; }
+        .comment-name { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
+        .comment-text { font-size: 0.95rem; white-space: pre-wrap; line-height: 1.5; }
+        .comments-list-wrapper { max-height: 350px; overflow-y: auto; margin-bottom: 16px; }
 
-        /* モーダル */
+        /* ---------------- モーダル ---------------- */
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(2px); }
         .modal-content { background: white; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .modal-content h3 { margin-top:0; color: var(--science-blue); font-size:1.2rem; margin-bottom: 16px;}
+        .modal-content h3 { margin-top:0; color: var(--text-main); font-size:1.2rem; margin-bottom: 8px;}
 
-        /* フッター */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)) 0; box-shadow: 0 -2px 15px rgba(28,49,119,0.08); z-index: 2000; border-top: 1px solid var(--bg-darker); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; color: #99a5c1; width: 33%; cursor: pointer; transition: color 0.2s ease; font-weight: 600; padding: 4px 0;}
-        .nav-item svg { width: 22px; height: 22px; margin-bottom: 4px; stroke: currentColor; transition: transform 0.2s ease; }
-        .nav-item.active { color: var(--science-blue); }
+        /* ---------------- ボトムナビゲーション ---------------- */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)) 0; box-shadow: 0 -1px 0 var(--border); z-index: 2000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-sub); width: 33%; cursor: pointer; transition: color 0.2s ease; font-weight: 600; padding: 4px 0;}
+        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; transition: transform 0.2s ease; }
+        .nav-item.active { color: var(--primary); }
         .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
     </style>
 </head>
@@ -147,7 +180,7 @@
         <div id="map"></div>
         <div class="floating-ui-top">
             <button id="gps-btn" class="floating-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
                 現在地周辺を検索
             </button>
         </div>
@@ -156,25 +189,29 @@
 
     <div class="container view-section" id="view-list">
         <h2 class="section-title">スポット一覧</h2>
-        <div class="controls">
-            <select id="sort-select" class="control-item" style="appearance: none; padding-right: 24px;">
+        <div class="controls-row">
+            <select id="sort-select" class="control-chip">
                 <option value="default">名前順</option>
                 <option value="distance">現在地に近い順</option>
             </select>
-            <div id="filter-open" class="control-item"><span style="display:inline-block; width:8px; height:8px; background:var(--accent-green); border-radius:50%; margin-right:6px;"></span>営業中のみ</div>
+            <div id="filter-open" class="control-chip">
+                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-right:6px;"></span>営業中のみ
+            </div>
         </div>
-        <div id="full-spot-list"><p style="text-align: center; color: var(--text-sub);">読み込み中...</p></div>
+        <div id="full-spot-list"><p class="text-center text-sub mt-lg">読み込み中...</p></div>
     </div>
 
     <div class="container view-section" id="view-add">
         <h2 class="section-title">新規スポットの追加</h2>
-        <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 20px;">見つけた給水スポットを登録して共有しましょう。<br><span style="color:var(--accent-red); font-weight:600;">※管理者の承認後にマップに表示されます。</span></p>
+        <p class="text-sub mb-lg">見つけた給水スポットを登録して共有しましょう。<br><span class="text-danger">※管理者の承認後にマップに表示されます。</span></p>
         
-        <div class="spot-card" style="padding: 20px;">
+        <div class="spot-card">
             <form id="add-spot-form">
-                <label>スポット名 (必須)</label><input type="text" id="add-name" required placeholder="例: 西3号館 ウォーターサーバー">
+                <label>スポット名 (必須)</label>
+                <input type="text" id="add-name" required placeholder="例: 西3号館 ウォーターサーバー">
+                
                 <label>建物名・エリア と 階数 (必須)</label>
-                <div class="input-group">
+                <div class="input-row">
                     <input type="text" id="add-placename" required placeholder="建物名 (例: 本館)" style="flex: 2;">
                     <input type="text" id="add-floor" placeholder="階数 (例: 3階)" style="flex: 1;">
                 </div>
@@ -183,81 +220,81 @@
                 <div class="add-map-container">
                     <div id="add-map" style="width: 100%; height: 100%; z-index: 1;"></div>
                     <div id="center-pin" class="center-pin">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--accent-red)" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--danger)" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>
                     </div>
                 </div>
-                <button type="button" id="btn-get-location" class="btn-large btn-secondary" style="padding: 10px; font-size: 0.9rem;">📍 現在地を取得</button>
+                <button type="button" id="btn-get-location" class="btn-large btn-secondary mb-md">📍 現在地を取得</button>
 
-                <label>特徴 (複数選択可)</label>
+                <label>設備の特徴 (複数選択可)</label>
                 <div class="features-grid">
-                    <input type="checkbox" id="f1" name="features" value="給水機" class="feature-checkbox"><label for="f1" class="feature-label">給水機</label>
-                    <input type="checkbox" id="f2" name="features" value="蛇口" class="feature-checkbox"><label for="f2" class="feature-label">蛇口</label>
-                    <input type="checkbox" id="f3" name="features" value="お湯" class="feature-checkbox"><label for="f3" class="feature-label">お湯</label>
+                    <input type="checkbox" id="f1" name="features" value="給水機" class="checkbox-hidden"><label for="f1" class="selectable-label">給水機</label>
+                    <input type="checkbox" id="f2" name="features" value="蛇口" class="checkbox-hidden"><label for="f2" class="selectable-label">蛇口</label>
+                    <input type="checkbox" id="f3" name="features" value="お湯" class="checkbox-hidden"><label for="f3" class="selectable-label">お湯</label>
                 </div>
 
                 <label>利用可能時間 (必須)</label>
-                <div class="input-group" style="margin-bottom:12px;">
-                    <input type="text" id="add-hours" placeholder="例: 09:00 - 18:00" style="flex:1;">
-                    <button type="button" id="btn-24h" class="control-item" style="margin:0;">24時間営業</button>
+                <div class="input-row">
+                    <input type="text" id="add-hours" required placeholder="例: 09:00 - 18:00" style="flex:1;">
+                    <button type="button" id="btn-24h" class="control-chip">24時間営業</button>
                 </div>
 
                 <label>休業日</label>
                 <div class="days-grid">
-                    <input type="checkbox" id="d1" name="closed_days" value="1" class="day-checkbox"><label for="d1" class="day-label">月</label>
-                    <input type="checkbox" id="d2" name="closed_days" value="2" class="day-checkbox"><label for="d2" class="day-label">火</label>
-                    <input type="checkbox" id="d3" name="closed_days" value="3" class="day-checkbox"><label for="d3" class="day-label">水</label>
-                    <input type="checkbox" id="d4" name="closed_days" value="4" class="day-checkbox"><label for="d4" class="day-label">木</label>
-                    <input type="checkbox" id="d5" name="closed_days" value="5" class="day-checkbox"><label for="d5" class="day-label">金</label>
-                    <input type="checkbox" id="d6" name="closed_days" value="6" class="day-checkbox"><label for="d6" class="day-label">土</label>
-                    <input type="checkbox" id="d0" name="closed_days" value="0" class="day-checkbox"><label for="d0" class="day-label">日</label>
-                    <input type="checkbox" id="d7" name="closed_days" value="7" class="day-checkbox"><label for="d7" class="day-label">祝</label>
+                    <input type="checkbox" id="d1" name="closed_days" value="1" class="checkbox-hidden"><label for="d1" class="selectable-label">月</label>
+                    <input type="checkbox" id="d2" name="closed_days" value="2" class="checkbox-hidden"><label for="d2" class="selectable-label">火</label>
+                    <input type="checkbox" id="d3" name="closed_days" value="3" class="checkbox-hidden"><label for="d3" class="selectable-label">水</label>
+                    <input type="checkbox" id="d4" name="closed_days" value="4" class="checkbox-hidden"><label for="d4" class="selectable-label">木</label>
+                    <input type="checkbox" id="d5" name="closed_days" value="5" class="checkbox-hidden"><label for="d5" class="selectable-label">金</label>
+                    <input type="checkbox" id="d6" name="closed_days" value="6" class="checkbox-hidden"><label for="d6" class="selectable-label">土</label>
+                    <input type="checkbox" id="d0" name="closed_days" value="0" class="checkbox-hidden"><label for="d0" class="selectable-label">日</label>
+                    <input type="checkbox" id="d7" name="closed_days" value="7" class="checkbox-hidden"><label for="d7" class="selectable-label">祝</label>
                 </div>
 
-                <label>画像 (任意 / 自動圧縮)</label>
+                <label>画像 (任意)</label>
                 <input type="file" id="add-image" accept="image/*">
-                <button type="submit" id="submit-btn" class="btn-large" style="margin-top:24px;">この内容で申請する</button>
+                
+                <button type="submit" id="submit-btn" class="btn-large mt-lg">この内容で申請する</button>
             </form>
         </div>
     </div>
 
     <div id="view-detail" class="view-section">
         <div class="container">
-            <button class="detail-back-btn" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 19 5 12 12 5"></polyline></svg> 戻る</button>
-            <div class="spot-card" style="padding: 20px; margin-bottom: 30px;">
+            <button class="detail-back-btn" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> 戻る</button>
+            
+            <div class="spot-card">
                 <img id="detail-image" class="detail-image" src="" alt="スポット画像" style="display:none;">
-                <div id="detail-placename" class="spot-placename" style="font-size: 0.9rem; display:flex; gap:6px; align-items:center;"></div>
-                <h2 id="detail-title" class="spot-title" style="font-size: 1.5rem; margin: 8px 0;"></h2>
-                <div id="detail-features" style="margin-bottom: 16px;"></div>
-                <div id="detail-meta" class="spot-meta" style="font-size: 1rem; margin-bottom: 16px; font-weight: 500;"></div>
+                <div id="detail-placename" class="popup-placename mb-sm"></div>
+                <h2 id="detail-title" class="spot-title" style="font-size: 1.5rem;"></h2>
+                <div id="detail-features" class="mb-md"></div>
+                <div id="detail-meta" class="spot-meta mb-lg" style="font-size: 1rem;"></div>
                 
-                <button class="btn-large btn-secondary" onclick="flyToSpotFromDetail()">地図で確認する</button>
-                
-                <button class="btn-large btn-secondary" onclick="openReportModal()" style="margin-top:12px; border-color:var(--accent-red); color:var(--accent-red); background:#fdf0f0;">🚨 情報の修正・問題を報告</button>
-
-                <div style="margin-top: 30px; border-top: 1px solid var(--bg-darker); padding-top: 20px;">
-                    <h3 class="section-title">コメント</h3>
-                    <div id="detail-comments-list"></div>
-                    <form id="add-comment-form" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                        <input type="text" id="comment-name" placeholder="お名前 (省略可)">
-                        <textarea id="comment-text" required placeholder="コメントを入力..." style="resize: vertical; min-height: 80px;"></textarea>
-                        <button type="submit" id="submit-comment-btn" class="btn-large">送信する</button>
-                    </form>
-                </div>
+                <button class="btn-large" onclick="flyToSpotFromDetail()">地図で場所を確認</button>
+                <button class="btn-large btn-danger-outline mt-md" onclick="openReportModal()">🚨 情報の修正・問題を報告</button>
             </div>
+
+            <div class="divider"></div>
+            <h3 class="section-title">コメント</h3>
+            <div id="detail-comments-list" class="comments-list-wrapper"></div>
+            <form id="add-comment-form" class="flex-column gap-sm">
+                <input type="text" id="comment-name" placeholder="お名前 (省略可)">
+                <textarea id="comment-text" required placeholder="コメントを入力..." style="resize: vertical; min-height: 80px;" class="mb-sm"></textarea>
+                <button type="submit" id="submit-comment-btn" class="btn-large btn-secondary">コメントを送信</button>
+            </form>
         </div>
     </div>
 
     <div id="view-admin" class="view-section">
         <div class="container">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 class="section-title" style="color:#d35400;">👑 管理者ダッシュボード</h2>
-                <button onclick="closeAdmin()" class="btn-small" style="background:var(--science-sub);">閉じる</button>
+            <div class="flex-between mb-md">
+                <h2 class="section-title" style="margin:0;">👑 管理者ダッシュボード</h2>
+                <button onclick="closeAdmin()" class="btn-small">閉じる</button>
             </div>
             
-            <h3 style="font-size:1rem; margin-top:20px; padding-bottom:4px; border-bottom:2px solid var(--science-blue);">承認待ちスポット</h3>
-            <div id="admin-unapproved-list" style="margin-bottom:30px;"></div>
+            <h3 class="section-title text-sub mt-lg">承認待ちスポット</h3>
+            <div id="admin-unapproved-list" class="mb-lg"></div>
 
-            <h3 style="font-size:1rem; margin-top:20px; padding-bottom:4px; border-bottom:2px solid var(--accent-red);">ユーザーからの報告</h3>
+            <h3 class="section-title text-sub mt-lg" style="color:var(--danger);">ユーザーからの報告</h3>
             <div id="admin-reports-list"></div>
         </div>
     </div>
@@ -265,14 +302,14 @@
     <div id="report-modal" class="modal-overlay">
         <div class="modal-content">
             <h3>問題の報告</h3>
-            <p style="font-size:0.85rem; color:var(--text-sub); margin-bottom:12px;">スポットに問題がある場合はお知らせください。</p>
-            <select id="report-category" style="margin-bottom:12px;">
+            <p class="text-sub mb-md">スポットに問題がある場合はお知らせください。</p>
+            <select id="report-category" class="form-select mb-md">
                 <option value="撤去・閉鎖">撤去・閉鎖されている</option>
                 <option value="情報の誤り">場所や時間などが間違っている</option>
                 <option value="その他">その他</option>
             </select>
-            <textarea id="report-text" placeholder="詳細をご記入ください" style="resize: vertical; min-height:80px;"></textarea>
-            <div style="display:flex; gap:10px; margin-top:16px;">
+            <textarea id="report-text" placeholder="詳細をご記入ください" style="resize: vertical; min-height:80px;" class="mb-md"></textarea>
+            <div class="flex-between gap-md">
                 <button onclick="closeReportModal()" class="btn-large btn-secondary">キャンセル</button>
                 <button onclick="submitReport()" class="btn-large" id="submit-report-btn">送信</button>
             </div>
@@ -341,9 +378,47 @@
         function getDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180; const dp = (lat2-lat1) * Math.PI/180; const dl = (lon2-lon1) * Math.PI/180; const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
         function formatDistance(meters) { return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`; }
         function isOpen(spot) { const hs = spot.available_hours || "24時間営業"; const cd = new Date().getDay(); if ((spot.closed_days || []).includes(cd)) return false; if (hs.includes("24時間") || hs === "不明") return true; try { const ct = new Date().getHours() * 60 + new Date().getMinutes(); const p = hs.split('-'); const s = p[0].trim().split(':').map(Number); const e = p[1].trim().split(':').map(Number); return ct >= (s[0]*60+s[1]) && ct <= (e[0]*60+e[1]); } catch { return true; } }
-        function getClosedDaysText(c) { return (!c || c.length===0) ? "" : `<span class="closed-days">休: ${c.map(d => ["日","月","火","水","木","金","土","祝"][d]).join(',')}</span>`; }
+        function getClosedDaysText(c) { return (!c || c.length===0) ? "" : `<span class="text-danger" style="margin-left:8px;">休: ${c.map(d => ["日","月","火","水","木","金","土","祝"][d]).join(',')}</span>`; }
         function getPinColor(f) { if (!f) return "var(--pin-default)"; if (f.includes("お湯")) return "var(--pin-hot)"; if (f.includes("給水機")) return "var(--pin-machine)"; if (f.includes("蛇口")) return "var(--pin-tap)"; return "var(--pin-default)"; }
-        function createCustomIcon(c) { return L.divIcon({ className: 'custom-pin', html: `<svg viewBox="0 0 24 24" fill="${c}" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>`, iconSize: [34,34], iconAnchor: [17,34], popupAnchor: [0,-32] }); }
+        function createCustomIcon(c) { return L.divIcon({ className: 'custom-pin', html: `<svg viewBox="0 0 24 24" fill="${c}" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="4" fill="white"></circle></svg>`, iconSize: [36,36], iconAnchor: [18,36], popupAnchor: [0,-34] }); }
+
+        // --- GPS取得機能 ---
+        function fetchCurrentLocation(callback) {
+            if (!navigator.geolocation) {
+                alert("お使いのブラウザは位置情報に対応していません。");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    userLocation = [pos.coords.latitude, pos.coords.longitude];
+                    // ユーザーの現在地ピンを表示
+                    if(userMarker) map.removeLayer(userMarker);
+                    userMarker = L.circleMarker(userLocation, { radius: 8, fillColor: "#007AFF", color: "#FFFFFF", weight: 3, opacity: 1, fillOpacity: 1 }).addTo(map);
+                    
+                    if(callback) callback();
+                },
+                (err) => { alert("位置情報の取得に失敗しました。端末のGPS設定をご確認ください。"); }
+            );
+        }
+
+        // 各画面のGPSボタンとの紐付け
+        document.getElementById('gps-btn').addEventListener('click', () => {
+            fetchCurrentLocation(() => {
+                map.flyTo(userLocation, 16);
+                updateLists();
+            });
+        });
+        document.getElementById('btn-get-location').addEventListener('click', () => {
+            fetchCurrentLocation(() => {
+                addMap.flyTo(userLocation, 18);
+            });
+        });
+
+        // 24時間営業ボタン
+        document.getElementById('btn-24h').addEventListener('click', () => {
+            document.getElementById('add-hours').value = "24時間営業";
+        });
+
 
         window.flyToSpot = function(id) {
             const spot = allSpots.find(s => s.id === id); if (!spot) return;
@@ -379,9 +454,9 @@
             const fh = (spot.features||[]).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
             return `<div class="spot-card clickable-card" onclick="${onClickAction}('${spot.id}')">
                 <span class="status-badge ${os ? 'status-open' : 'status-closed'}">${os ? '営業中' : '時間外'}</span>
-                <div class="popup-placename" style="margin-bottom:6px;"><span>${escapeHTML(spot.placename)}</span> ${spot.floor ? `<span class="popup-floor">${escapeHTML(spot.floor)}</span>`:""}</div>
-                <div class="spot-title"><b>${escapeHTML(spot.name)}</b></div>
-                <div style="margin-bottom:8px; margin-top:6px;">${fh}</div>
+                <div class="popup-placename mb-sm"><span>${escapeHTML(spot.placename)}</span> ${spot.floor ? `<span class="popup-floor">${escapeHTML(spot.floor)}</span>`:""}</div>
+                <div class="spot-title">${escapeHTML(spot.name)}</div>
+                <div class="mb-sm mt-sm">${fh}</div>
                 <div class="spot-meta">${dt}<span>${escapeHTML(spot.available_hours)||"24時間営業"}</span>${getClosedDaysText(spot.closed_days)}</div>
             </div>`;
         }
@@ -396,7 +471,7 @@
             if (userLocation) dSpots.forEach(s => s.distance = getDistance(userLocation[0], userLocation[1], s.latitude, s.longitude));
             if (filterOpenOnly) dSpots = dSpots.filter(s => isOpen(s));
             if (sortBy === "distance" && userLocation) dSpots.sort((a, b) => a.distance - b.distance); else dSpots.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-            fList.innerHTML = dSpots.map(s => createCard(s, 'showDetail')).join('') || "<p style='text-align:center; padding:40px;'>条件に合うスポットがありません</p>";
+            fList.innerHTML = dSpots.map(s => createCard(s, 'showDetail')).join('') || "<p class='text-center text-sub mt-lg'>条件に合うスポットがありません</p>";
 
             allSpots.forEach(spot => { const v = filterOpenOnly ? isOpen(spot) : true; if (v) { if (!map.hasLayer(spot.marker)) spot.marker.addTo(map); } else { if (map.hasLayer(spot.marker)) map.removeLayer(spot.marker); } });
         }
@@ -419,8 +494,65 @@
         }
 
         map.on('moveend', updateLists);
-        document.getElementById("sort-select").addEventListener('change', (e) => { if (e.target.value === "distance" && !userLocation) { if(confirm("現在地を取得しますか？")) document.getElementById('gps-btn').click(); else e.target.value = "default"; } else updateLists(); });
+
+        // 並び替え時の処理修正
+        document.getElementById("sort-select").addEventListener('change', (e) => {
+            if (e.target.value === "distance" && !userLocation) {
+                if (confirm("現在地に近い順に並び替えるには、位置情報を取得しますか？")) {
+                    fetchCurrentLocation(() => {
+                        document.getElementById("sort-select").value = "distance"; // 選択を維持
+                        updateLists(); // 取得後に更新
+                    });
+                } else {
+                    e.target.value = "default"; // キャンセル時は元に戻す
+                }
+            } else {
+                updateLists();
+            }
+        });
+
         document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.currentTarget.classList.toggle('active'); updateLists(); });
+
+        // --- 追加フォームの送信処理 ---
+        document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true; btn.innerText = "送信中...";
+            
+            try {
+                const name = document.getElementById('add-name').value;
+                const placename = document.getElementById('add-placename').value;
+                const floor = document.getElementById('add-floor').value;
+                const hours = document.getElementById('add-hours').value;
+                const features = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
+                const closed_days = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
+                
+                let imageUrl = null;
+                const fileInput = document.getElementById('add-image');
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const storageRef = ref(storage, 'spots/' + Date.now() + '_' + file.name);
+                    await uploadBytes(storageRef, file);
+                    imageUrl = await getDownloadURL(storageRef);
+                }
+
+                await addDoc(collection(db, "spots"), {
+                    name, placename, floor, available_hours: hours,
+                    features, closed_days,
+                    latitude: addMap.currentLat, longitude: addMap.currentLng,
+                    imageUrl, approved: false, created_at: serverTimestamp()
+                });
+                
+                alert("スポットの申請が完了しました。管理者の承認後にマップに反映されます。");
+                e.target.reset();
+                document.querySelector('[data-target="view-map"]').click();
+            } catch (err) {
+                console.error(err);
+                alert("送信中にエラーが発生しました。");
+            } finally {
+                btn.disabled = false; btn.innerText = "この内容で申請する";
+            }
+        });
 
         // --- 管理者モード (ヘッダー5回タップ) ---
         let headerClickCount = 0; let headerTimer;
@@ -448,16 +580,16 @@
                 const snap = await getDocs(collection(db, "spots")); let unapp = [];
                 snap.forEach(d => { const dt = d.data(); if(dt.approved === false) unapp.push({id: d.id, ...dt}); });
                 uDiv.innerHTML = unapp.length ? unapp.map(s => `
-                    <div class="spot-card"><b>${escapeHTML(s.name)}</b> (${escapeHTML(s.placename)})<br><small>${escapeHTML(s.available_hours)} | ${(s.features||[]).join(',')}</small>
-                    <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-small" style="background:var(--accent-green);" onclick="approveSpot('${s.id}')">承認</button><button class="btn-small" style="background:var(--accent-red);" onclick="deleteSpot('${s.id}')">削除</button></div></div>
-                `).join('') : "<p>承認待ちのスポットはありません。</p>";
+                    <div class="spot-card"><b>${escapeHTML(s.name)}</b> (${escapeHTML(s.placename)})<br><small class="text-sub">${escapeHTML(s.available_hours)} | ${(s.features||[]).join(',')}</small>
+                    <div class="flex-between mt-md gap-sm"><button class="btn-small w-full" style="background:var(--success);" onclick="approveSpot('${s.id}')">承認</button><button class="btn-small w-full" style="background:var(--danger);" onclick="deleteSpot('${s.id}')">削除</button></div></div>
+                `).join('') : "<p class='text-sub'>承認待ちのスポットはありません。</p>";
                 
                 const rSnap = await getDocs(collection(db, "reports")); let reps = [];
                 rSnap.forEach(d => { const dt = d.data(); if(!dt.resolved) reps.push({id: d.id, ...dt}); });
                 rDiv.innerHTML = reps.length ? reps.map(r => `
-                    <div class="spot-card" style="border-left:4px solid var(--accent-red);"><b>対象ID: ${r.spotId}</b><br><small style="color:var(--accent-red);font-weight:bold;">${escapeHTML(r.category)}</small><p style="font-size:0.85rem;margin:4px 0;">${escapeHTML(r.text)}</p>
-                    <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-small" style="background:var(--science-sub);" onclick="resolveReport('${r.id}')">対応済にする</button><button class="btn-small" style="background:var(--accent-red);" onclick="deleteSpot('${r.spotId}')">対象スポット削除</button></div></div>
-                `).join('') : "<p>未対応の報告はありません。</p>";
+                    <div class="spot-card" style="border-left:4px solid var(--danger);"><b>対象ID: ${r.spotId}</b><br><small class="text-danger">${escapeHTML(r.category)}</small><p style="font-size:0.85rem;margin:8px 0;">${escapeHTML(r.text)}</p>
+                    <div class="flex-between mt-md gap-sm"><button class="btn-small w-full" style="background:var(--primary);" onclick="resolveReport('${r.id}')">対応済にする</button><button class="btn-small w-full" style="background:var(--danger);" onclick="deleteSpot('${r.spotId}')">対象を削除</button></div></div>
+                `).join('') : "<p class='text-sub'>未対応の報告はありません。</p>";
             } catch(e) { uDiv.innerHTML = "エラー"; rDiv.innerHTML = "エラー"; console.error(e); }
         }
 
@@ -476,19 +608,31 @@
             catch(e) { alert("送信に失敗しました。"); } finally { btn.disabled = false; btn.innerText = "送信"; }
         }
 
-        // --- 初期化 ---
+        // --- コメント機能 ---
+        async function loadComments(spotId) {
+            const list = document.getElementById('detail-comments-list'); list.innerHTML = '<p class="text-sub">読込中...</p>';
+            try { 
+                const qSnap = await getDocs(collection(db, "spots", spotId, "comments")); let cmts = []; 
+                qSnap.forEach(d => cmts.push(d.data())); 
+                cmts.sort((a, b) => (a.created_at?.toMillis()||0) - (b.created_at?.toMillis()||0));
+                list.innerHTML = cmts.length ? cmts.map(c => `<div class="comment-item"><div class="comment-header"><span class="comment-name">${escapeHTML(c.name)||'名無しさん'}</span><span class="text-sub">${new Date(c.created_at?.toMillis()||Date.now()).toLocaleString('ja-JP')}</span></div><div class="comment-text">${escapeHTML(c.text)}</div></div>`).join('') : '<p class="text-sub">まだコメントはありません。</p>';
+            } catch { list.innerHTML = '<p class="text-danger">読み込みに失敗しました</p>'; }
+        }
+        document.getElementById('add-comment-form').addEventListener('submit', async(e) => { 
+            e.preventDefault(); if(!window.currentDetailSpotId) return; 
+            const btn = document.getElementById('submit-comment-btn'); btn.disabled=true; btn.innerText="送信中..."; 
+            try{ 
+                await addDoc(collection(db,"spots",window.currentDetailSpotId,"comments"), {name:document.getElementById('comment-name').value, text:document.getElementById('comment-text').value, created_at:serverTimestamp()}); 
+                e.target.reset(); 
+                await loadComments(window.currentDetailSpotId); 
+                btn.innerText="完了"; 
+                setTimeout(()=>{btn.disabled=false;btn.innerText="コメントを送信";},2000); 
+            }catch(err){alert('送信に失敗しました'); btn.disabled=false; btn.innerText="コメントを送信";} 
+        });
+
+        // --- 初期化・タブ切り替え ---
         loadSpots();
 
-        // コメント読み込み・追加、GPS取得、追加フォーム送信処理は文字数制限を回避するため省略なく結合（前バージョンのロジックをそのまま維持しています）
-        async function loadComments(spotId) {
-            const list = document.getElementById('detail-comments-list'); list.innerHTML = '読込中...';
-            try { const qSnap = await getDocs(collection(db, "spots", spotId, "comments")); let cmts = []; qSnap.forEach(d => cmts.push(d.data())); cmts.sort((a, b) => (a.created_at?.toMillis()||0) - (b.created_at?.toMillis()||0));
-                list.innerHTML = cmts.length ? cmts.map(c => `<div class="comment-item"><div class="comment-header"><span class="comment-name">${escapeHTML(c.name)||'名無しさん'}</span><span class="comment-date">${new Date(c.created_at?.toMillis()||Date.now()).toLocaleString('ja-JP')}</span></div><div class="comment-text">${escapeHTML(c.text)}</div></div>`).join('') : '<p>まだコメントはありません。</p>';
-            } catch { list.innerHTML = '失敗しました'; }
-        }
-        document.getElementById('add-comment-form').addEventListener('submit', async(e) => { e.preventDefault(); if(!window.currentDetailSpotId) return; const btn = document.getElementById('submit-comment-btn'); btn.disabled=true; btn.innerText="送信中"; try{ await addDoc(collection(db,"spots",window.currentDetailSpotId,"comments"), {name:document.getElementById('comment-name').value, text:document.getElementById('comment-text').value, created_at:serverTimestamp()}); e.target.reset(); await loadComments(window.currentDetailSpotId); btn.innerText="完了"; setTimeout(()=>{btn.disabled=false;btn.innerText="送信する";},2000); }catch(err){alert('失敗');btn.disabled=false;btn.innerText="送信する";} });
-
-        // タブ切り替え
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', () => {
