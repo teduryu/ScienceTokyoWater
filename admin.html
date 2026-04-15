@@ -1,502 +1,254 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <link rel="icon" href="icon.png" type="image/png">
-    <link rel="apple-touch-icon" href="pwaicon.png" type="image/png">
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#007AFF">
-    <title>ScienceTokyoWater</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者ダッシュボード - ScienceTokyoWater</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    
     <style>
         :root {
-            --primary: #007AFF; --primary-hover: #005bb5; --primary-light: #E5F1FF;
-            --bg-base: #F2F4F7; --surface: #FFFFFF; --text-main: #1C1C1E; --text-sub: #8E8E93;
-            --danger: #FF3B30; --danger-bg: #FFEBEA; --success: #34C759; --success-bg: #EAF9EC;
-            --border: #E5E5EA; --pin-hot: #FF3B30; --pin-machine: #007AFF; --pin-tap: #34C759; --pin-default: #8E8E93;
+            --primary: #007AFF; --bg-base: #F2F4F7; --surface: #FFFFFF;
+            --text-main: #1C1C1E; --text-sub: #8E8E93; --danger: #FF3B30;
+            --success: #34C759; --border: #E5E5EA;
         }
-
-        body {
-            font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0;
-            background-color: var(--bg-base); color: var(--text-main);
-            padding-top: 60px; padding-bottom: calc(70px + env(safe-area-inset-bottom));
-            -webkit-font-smoothing: antialiased; overflow-x: hidden; -webkit-tap-highlight-color: transparent;
-        }
-        * { box-sizing: border-box; }
-
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        h1, h2, h3 { color: var(--primary); margin-top: 0; }
+        h2 { border-bottom: 2px solid var(--primary-light); padding-bottom: 8px; margin-bottom: 16px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem;}
+        .btn-danger { background: white; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-success { background: white; color: var(--success); border: 1px solid var(--success); }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .flex-center { display: flex; justify-content: center; align-items: center; }
-        .flex-column { display: flex; flex-direction: column; }
-        .gap-sm { gap: 8px; } .gap-md { gap: 16px; }
-        .mb-sm { margin-bottom: 8px; } .mb-md { margin-bottom: 16px; } .mb-lg { margin-bottom: 24px; }
-        .mt-sm { margin-top: 8px; } .mt-md { margin-top: 16px; } .mt-lg { margin-top: 24px; }
-        .text-center { text-align: center; } .text-sub { color: var(--text-sub); font-size: 0.85rem; }
-        .text-danger { color: var(--danger); font-weight: bold; } .w-full { width: 100%; }
-
-        header {
-            background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
-            display: flex; align-items: center; justify-content: center;
-            height: 60px; font-size: 1.15rem; font-weight: 700; color: var(--primary);
-            position: fixed; top: 0; left: 0; right: 0; z-index: 2000; box-shadow: 0 1px 0 var(--border); user-select: none;
-        }
-        .header-logo { width: 24px; height: 24px; margin-right: 8px; object-fit: contain; border-radius: 4px; }
-
-        .container { padding: 16px; max-width: 600px; margin: 0 auto; }
-        .view-section { display: none; animation: fadeIn 0.3s ease; }
-        .view-section.active { display: block; height: auto; min-height: calc(100vh - 140px); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .section-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 16px 0; color: var(--primary); }
-        .divider { border-top: 1px solid var(--border); margin: 24px 0; }
-
-        #view-map.active { position: fixed; top: 0; left: 0; right: 0; bottom: 0; padding: 0; z-index: 10; }
-        #map { width: 100%; height: 100%; z-index: 1; background-color: #e5e3df; }
-        .leaflet-top { top: 65px !important; }
-        
-        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
-        .leaflet-popup-content { margin: 14px; font-family: 'Noto Sans JP', sans-serif; width: 220px !important; }
-        .custom-popup { display: flex; flex-direction: column; gap: 6px; }
-        .popup-placename { font-size: 0.75rem; color: var(--text-sub); font-weight: 600; display: flex; gap:4px; align-items: center; }
-        .popup-floor { background: var(--bg-base); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; color: var(--primary); font-weight: 700; border: 1px solid var(--border); }
-        .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); line-height: 1.3; margin: 0; }
-        .popup-btn { background: var(--primary-light); color: var(--primary); font-weight: 700; padding: 10px; border-radius: 8px; cursor: pointer; border: none; width: 100%; margin-top: 8px; }
-
-        .custom-pin { filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25)); display: flex; align-items: center; justify-content: center; }
-        .custom-pin svg { width: 100%; height: 100%; }
-
-        .floating-ui-top { position: absolute; top: 76px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
-        .floating-btn { background: var(--primary); color: white; padding: 10px 20px; font-size: 0.9rem; border-radius: 30px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); border: none; font-weight: 700; display: flex; align-items: center; gap: 8px; pointer-events: auto; cursor: pointer; white-space: nowrap; transition: opacity 0.2s;}
-        .floating-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        
-        .floating-ui-bottom { position: absolute; bottom: calc(75px + env(safe-area-inset-bottom)); left: 0; width: 100%; z-index: 1000; pointer-events: none; }
-        .horizontal-scroll-list { pointer-events: auto; display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px 16px 16px; scroll-snap-type: x mandatory; scrollbar-width: none; cursor: grab; }
-        .horizontal-scroll-list:active { cursor: grabbing; }
-        .horizontal-scroll-list::-webkit-scrollbar { display: none; }
-        
-        #map-visible-list .spot-card { flex: 0 0 85%; scroll-snap-align: center; margin-bottom: 0; padding: 12px; }
-        .spot-card.compact .spot-title { font-size: 1rem; margin: 2px 0 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .spot-card.compact .status-badge { top: 12px; right: 12px; }
-        
-        .empty-message-pill { background: rgba(255,255,255,0.95); padding: 12px 24px; border-radius: 30px; margin: 0 auto; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid var(--border); pointer-events: auto; }
-
-        .spot-card { background-color: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; border: 1px solid var(--border); }
-        .clickable-card { cursor: pointer; transition: background-color 0.2s ease; }
-        .clickable-card:active { background-color: var(--bg-base); }
-        
-        .status-badge { position: absolute; top: 16px; right: 16px; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
-        .status-open { background: var(--success-bg); color: var(--success); }
-        .status-closed { background: var(--danger-bg); color: var(--danger); }
-        
-        .spot-title { font-size: 1.1rem; font-weight: 700; margin: 4px 0 8px 0; color: var(--text-main); line-height: 1.4; }
-        .spot-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .dist-badge { background: var(--primary-light); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--primary); }
-        .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-base); color: var(--text-sub); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
-
-        .btn-large { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--primary); color: white; border: none; padding: 16px; font-size: 1rem; border-radius: 12px; cursor: pointer; font-weight: 700; transition: opacity 0.2s; }
-        .btn-large:active { opacity: 0.8; }
-        .btn-large:disabled { background: var(--border); color: var(--text-sub); cursor: not-allowed; }
-        .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); }
-        .btn-danger-outline { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
-
-        .controls-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-        .control-chip { background: var(--surface); padding: 10px 16px; border-radius: 30px; font-size: 0.85rem; border: 1px solid var(--border); color: var(--text-main); cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .control-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
-        select.control-chip { appearance: none; padding-right: 32px; background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" stroke="%231C1C1E" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; }
-
-        form label { display: block; margin: 20px 0 8px 0; font-size: 0.9rem; color: var(--text-main); font-weight: 700; }
-        form input[type="text"], form input[type="file"], form textarea, select.form-select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--bg-base); color: var(--text-main); outline: none; transition: all 0.2s; }
-        form input:focus, form textarea:focus { border-color: var(--primary); background: var(--surface); }
-        form input:disabled { background-color: var(--border); opacity: 0.6; cursor: not-allowed; color: var(--text-sub); }
-        
-        .input-row { display: flex; gap: 8px; }
-        .checkbox-hidden { display: none; }
-        .selectable-label { display: inline-block; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); cursor: pointer; font-weight: 600; text-align: center; transition: all 0.2s;}
-        .checkbox-hidden:checked + .selectable-label { background: var(--primary); color: white; border-color: var(--primary); }
-        
-        .features-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .days-grid { display: flex; width: 100%; gap: 4px; }
-        .days-grid .selectable-label { flex: 1; padding: 10px 0; font-size: 0.8rem; }
-
-        .add-map-container { position: relative; height: 200px; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background-color: #e5e3df; margin-bottom: 8px; }
-        .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25)); transition: transform 0.1s; }
-        .center-pin.moving { transform: translate(-50%, -120%); }
-
-        .detail-image { width: 100%; height: 240px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; background-color: var(--bg-base); border: 1px solid var(--border); }
-        .detail-back-btn { background: none; border: none; color: var(--primary); font-size: 1rem; font-weight: 700; padding: 8px 0; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        
-        .comment-item { background: var(--bg-base); padding: 16px; border-radius: 12px; margin-bottom: 12px; }
-        .comment-header { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; }
-        .comment-name { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
-        .comment-text { font-size: 0.95rem; white-space: pre-wrap; line-height: 1.5; }
-        .comments-list-wrapper { max-height: 350px; overflow-y: auto; margin-bottom: 16px; }
-
-        .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(2px); }
-        .modal-content { background: white; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .modal-content h3 { margin-top:0; color: var(--text-main); font-size:1.2rem; margin-bottom: 8px;}
-
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)) 0; box-shadow: 0 -1px 0 var(--border); z-index: 2000; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-sub); width: 33.33%; cursor: pointer; transition: color 0.2s ease; font-weight: 600; padding: 4px 0;}
-        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; transition: transform 0.2s ease; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
+        .item-row { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
+        .item-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .item-meta { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 4px; }
+        .item-content { font-size: 1rem; margin-bottom: 12px; white-space: pre-wrap; background: var(--bg-base); padding: 12px; border-radius: 8px;}
+        .spot-img { max-width: 200px; border-radius: 8px; margin-top: 8px; display: block;}
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: var(--border); margin-right: 8px; }
+        .badge-warning { background: #FFF500; color: #333; }
     </style>
 </head>
 <body>
 
-    <header id="app-header">
-        <img src="menuicon.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
-        ScienceTokyoWater
-    </header>
-
-    <div id="view-map" class="view-section active">
-        <div id="map"></div>
-        <div class="floating-ui-top"><button id="gps-btn" class="floating-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg><span id="gps-btn-text">現在地周辺を検索</span></button></div>
-        <div class="floating-ui-bottom"><div id="map-visible-list" class="horizontal-scroll-list"></div></div>
-    </div>
-
-    <div class="container view-section" id="view-list">
-        <h2 class="section-title">スポット一覧</h2>
-        <div class="controls-row">
-            <select id="sort-select" class="control-chip"><option value="default">名前順</option><option value="distance">現在地に近い順</option></select>
-            <div id="filter-open" class="control-chip"><span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-right:6px;"></span>営業中のみ</div>
+    <div class="container">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <h1>管理者ダッシュボード</h1>
+            <button id="logout-btn" class="btn btn-danger" style="display: none;">ログアウト</button>
         </div>
-        <div id="full-spot-list"><p class="text-center text-sub mt-lg">読み込み中...</p></div>
-    </div>
 
-    <div class="container view-section" id="view-add">
-        <h2 class="section-title">新規スポットの追加</h2>
-        <p class="text-sub mb-lg">見つけた給水スポットを登録して共有しましょう。<br><span class="text-danger">※管理者の承認後にマップに表示されます。</span></p>
-        <div class="spot-card">
-            <form id="add-spot-form">
-                <label>スポット名 (必須)</label><input type="text" id="add-name" required placeholder="例: 西3号館 ウォーターサーバー">
-                <label>建物名・エリア と 階数 (必須)</label>
-                <div class="input-row"><input type="text" id="add-placename" required placeholder="建物名 (例: 本館)" style="flex: 2;"><input type="text" id="add-floor" placeholder="階数 (例: 3階)" style="flex: 1;"></div>
-                <label>場所の指定 (地図を動かしてピンを合わせる)</label>
-                <div class="add-map-container"><div id="add-map" style="width: 100%; height: 100%; z-index: 1;"></div><div id="center-pin" class="center-pin"><svg width="36" height="36" viewBox="0 0 24 24" fill="var(--danger)" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg></div></div>
-                <button type="button" id="btn-get-location" class="btn-large btn-secondary mb-md"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> <span id="add-gps-text">現在地を取得</span></button>
-                <label>設備の特徴 (複数選択可)</label>
-                <div class="features-grid"><input type="checkbox" id="f1" name="features" value="給水機" class="checkbox-hidden"><label for="f1" class="selectable-label">給水機</label><input type="checkbox" id="f2" name="features" value="蛇口" class="checkbox-hidden"><label for="f2" class="selectable-label">蛇口</label><input type="checkbox" id="f3" name="features" value="お湯" class="checkbox-hidden"><label for="f3" class="selectable-label">お湯</label></div>
-                <label>利用可能時間 (必須)</label>
-                <div class="input-row"><input type="text" id="add-hours" required placeholder="例: 09:00 - 18:00" style="flex:1;"><button type="button" id="btn-24h" class="control-chip">24時間営業</button></div>
-                <label>休業日</label>
-                <div class="days-grid"><input type="checkbox" id="d1" name="closed_days" value="1" class="checkbox-hidden"><label for="d1" class="selectable-label">月</label><input type="checkbox" id="d2" name="closed_days" value="2" class="checkbox-hidden"><label for="d2" class="selectable-label">火</label><input type="checkbox" id="d3" name="closed_days" value="3" class="checkbox-hidden"><label for="d3" class="selectable-label">水</label><input type="checkbox" id="d4" name="closed_days" value="4" class="checkbox-hidden"><label for="d4" class="selectable-label">木</label><input type="checkbox" id="d5" name="closed_days" value="5" class="checkbox-hidden"><label for="d5" class="selectable-label">金</label><input type="checkbox" id="d6" name="closed_days" value="6" class="checkbox-hidden"><label for="d6" class="selectable-label">土</label><input type="checkbox" id="d0" name="closed_days" value="0" class="checkbox-hidden"><label for="d0" class="selectable-label">日</label><input type="checkbox" id="d7" name="closed_days" value="7" class="checkbox-hidden"><label for="d7" class="selectable-label">祝</label></div>
-                <label>画像 (任意)</label>
-                <input type="file" id="add-image" accept="image/*">
-                <button type="submit" id="submit-btn" class="btn-large mt-lg">この内容で申請する</button>
-            </form>
+        <div id="auth-section" class="card" style="text-align: center;">
+            <p>管理操作を行うには、許可されたGoogleアカウントでログインしてください。</p>
+            <button id="login-btn" class="btn" style="padding: 12px 24px; font-size: 1rem;">Googleでログイン</button>
+            <p id="auth-error" style="color: var(--danger); display: none; margin-top: 10px;"></p>
         </div>
-    </div>
 
-    <div id="view-detail" class="view-section">
-        <div class="container">
-            <button class="detail-back-btn" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> 戻る</button>
-            <div class="spot-card">
-                <img id="detail-image" class="detail-image" src="" alt="スポット画像" style="display:none;">
-                <div id="detail-placename" class="popup-placename mb-sm"></div>
-                <h2 id="detail-title" class="spot-title" style="font-size: 1.5rem;"></h2>
-                <div id="detail-features" class="mb-md"></div>
-                <div id="detail-meta" class="spot-meta mb-lg" style="font-size: 1rem;"></div>
-                <button class="btn-large" onclick="flyToSpotFromDetail()">地図で場所を確認</button>
-                <button class="btn-large btn-danger-outline mt-md" onclick="openReportModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> 情報の修正・問題を報告</button>
+        <div id="admin-dashboard" style="display: none;">
+            <p style="color: var(--text-sub); margin-bottom: 24px;">ログイン中: <strong id="admin-email-disp"></strong></p>
+            
+            <div class="card">
+                <h2>1. 承認待ちのスポット</h2>
+                <div id="unapproved-list">読み込み中...</div>
             </div>
-            <div class="divider"></div>
-            <h3 class="section-title">コメント</h3>
-            <div id="detail-comments-list" class="comments-list-wrapper"></div>
-            <form id="add-comment-form" class="flex-column gap-sm">
-                <input type="text" id="comment-name" placeholder="お名前 (省略可)">
-                <textarea id="comment-text" required placeholder="コメントを入力..." style="resize: vertical; min-height: 80px;" class="mb-sm"></textarea>
-                <button type="submit" id="submit-comment-btn" class="btn-large btn-secondary">コメントを送信</button>
-            </form>
-        </div>
-    </div>
 
-    <div id="report-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>問題の報告</h3>
-            <p class="text-sub mb-md">スポットに問題がある場合はお知らせください。</p>
-            <select id="report-category" class="form-select mb-md"><option value="撤去・閉鎖">撤去・閉鎖されている</option><option value="情報の誤り">場所や時間などが間違っている</option><option value="その他">その他</option></select>
-            <textarea id="report-text" placeholder="詳細をご記入ください" style="resize: vertical; min-height:80px;" class="mb-md"></textarea>
-            <div class="flex-between gap-md">
-                <button onclick="closeReportModal()" class="btn-large btn-secondary">キャンセル</button>
-                <button onclick="submitReport()" class="btn-large" id="submit-report-btn">送信</button>
+            <div class="card">
+                <h2>2. 問題の報告 (未解決)</h2>
+                <div id="reports-list">読み込み中...</div>
+            </div>
+
+            <div class="card">
+                <h2>3. 最新のコメント管理</h2>
+                <div id="comments-list">読み込み中...</div>
             </div>
         </div>
     </div>
-
-    <div class="bottom-nav">
-        <div class="nav-item active" data-target="view-map">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg><span>マップ</span>
-        </div>
-        <div class="nav-item" data-target="view-list">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg><span>リスト</span>
-        </div>
-        <div class="nav-item" data-target="view-add">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg><span>追加</span>
-        </div>
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
-    <script>
-        const MAP_TILE_URL = 'https://tile.tracestrack.com/ja/{z}/{x}/{y}.png?key=27e171dc5ca2cc214ecf5ab9d0f493bd';
-        const MAP_ATTRIBUTION = '&copy; OpenStreetMap contributors';
-        
-        const map = L.map('map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
-        L.tileLayer(MAP_TILE_URL, { maxZoom: 19, attribution: MAP_ATTRIBUTION }).addTo(map);
-
-        let addMap = null;
-        function initAddMap() {
-            if (addMap) return;
-            addMap = L.map('add-map', { zoomControl: false }).setView([35.6061, 139.6833], 16);
-            L.tileLayer(MAP_TILE_URL, { maxZoom: 19 }).addTo(addMap);
-            const pinEl = document.getElementById('center-pin');
-            addMap.currentLat = 35.6061; addMap.currentLng = 139.6833;
-            addMap.on('movestart', () => pinEl.classList.add('moving'));
-            addMap.on('move', () => { const center = addMap.getCenter(); addMap.currentLat = center.lat; addMap.currentLng = center.lng; });
-            addMap.on('moveend', () => pinEl.classList.remove('moving'));
-        }
-        setTimeout(() => { map.invalidateSize(); }, 500);
-
-        const scrollList = document.getElementById('map-visible-list');
-        let isDown = false; let startX; let scrollLeft;
-        scrollList.addEventListener('mousedown', (e) => { isDown = true; startX = e.pageX - scrollList.offsetLeft; scrollLeft = scrollList.scrollLeft; });
-        scrollList.addEventListener('mouseleave', () => { isDown = false; });
-        scrollList.addEventListener('mouseup', () => { isDown = false; });
-        scrollList.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - scrollList.offsetLeft; const walk = (x - startX) * 2; scrollList.scrollLeft = scrollLeft - walk; });
-        scrollList.addEventListener('wheel', (e) => { if(e.deltaY !== 0) { e.preventDefault(); scrollList.scrollLeft += e.deltaY; } });
-    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, collectionGroup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+        // Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg", authDomain: "sciencetokyowater.firebaseapp.com",
             projectId: "sciencetokyowater", storageBucket: "sciencetokyowater.firebasestorage.app",
             messagingSenderId: "1039095456448", appId: "1:1039095456448:web:548ed9fcc01c811b470325"
         };
-        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const storage = getStorage(app);
-        
-        let allSpots = []; let userLocation = null; let userMarker = null;
-        let filterOpenOnly = false; let previousView = 'view-map'; window.currentDetailSpotId = null;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
 
+        // 管理用メールアドレス
+        const ADMIN_EMAILS = ['teduryu@gmail.com'];
+
+        // XSS対策用
         function escapeHTML(str) { return typeof str === 'string' ? str.replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m])) : ''; }
-        function getDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180; const dp = (lat2-lat1) * Math.PI/180; const dl = (lon2-lon1) * Math.PI/180; const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
-        function formatDistance(meters) { return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`; }
-        
-        // 深夜（日またぎ）営業判定の修正
-        function isOpen(spot) {
-            const hs = spot.available_hours || "24時間営業";
-            const cd = new Date().getDay();
-            if ((spot.closed_days || []).includes(cd)) return false;
-            if (hs.includes("24時間") || hs === "不明") return true;
-            try {
-                const ct = new Date().getHours() * 60 + new Date().getMinutes();
-                const p = hs.replace(/[～~]/g, '-').split('-');
-                if (p.length < 2) return true;
-                const s = p[0].trim().split(':').map(Number);
-                const e = p[1].trim().split(':').map(Number);
-                const startMins = s[0] * 60 + s[1];
-                const endMins = e[0] * 60 + e[1];
-                
-                if (startMins <= endMins) {
-                    return ct >= startMins && ct <= endMins;
+        function formatDate(timestamp) { return timestamp ? new Date(timestamp.toMillis()).toLocaleString('ja-JP') : '日時不明'; }
+
+        // スポットのIDと名前を紐付けるためのキャッシュ
+        let spotsCache = {};
+
+        // 認証状態の監視
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if (ADMIN_EMAILS.includes(user.email)) {
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'block';
+                    document.getElementById('logout-btn').style.display = 'block';
+                    document.getElementById('admin-email-disp').innerText = user.email;
+                    loadAllAdminData();
                 } else {
-                    // 日またぎの営業時間 (例: 22:00 - 02:00)
-                    return ct >= startMins || ct <= endMins;
+                    document.getElementById('auth-error').style.display = 'block';
+                    document.getElementById('auth-error').innerText = `エラー: アカウント (${user.email}) には管理者権限がありません。`;
                 }
-            } catch { return true; }
-        }
-
-        function getClosedDaysText(c) { return (!c || c.length===0) ? "" : `<span class="text-danger" style="margin-left:8px;">休: ${c.map(d => ["日","月","火","水","木","金","土","祝"][d]).join(',')}</span>`; }
-        function getPinColor(f) { if (!f) return "var(--pin-default)"; if (f.includes("お湯")) return "var(--pin-hot)"; if (f.includes("給水機")) return "var(--pin-machine)"; if (f.includes("蛇口")) return "var(--pin-tap)"; return "var(--pin-default)"; }
-        function createCustomIcon(c) { return L.divIcon({ className: 'custom-pin', html: `<svg viewBox="0 0 24 24" fill="${c}" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="4" fill="white"></circle></svg>`, iconSize: [36,36], iconAnchor: [18,36], popupAnchor: [0,-34] }); }
-
-        function compressImage(file, maxWidth = 1024, quality = 0.8) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader(); reader.readAsDataURL(file);
-                reader.onload = event => {
-                    const img = new Image(); img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width; let height = img.height;
-                        if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
-                        canvas.width = width; canvas.height = height;
-                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-                        canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
-                    }; img.onerror = error => reject(error);
-                }; reader.onerror = error => reject(error);
-            });
-        }
-
-        function fetchCurrentLocation(btnEl, textElId, defaultText, callback) {
-            if (!navigator.geolocation) return alert("お使いの端末は位置情報に対応していません。");
-            const textEl = document.getElementById(textElId);
-            btnEl.disabled = true; textEl.innerText = "取得中...";
-            navigator.geolocation.getCurrentPosition(
-                (pos) => { userLocation = [pos.coords.latitude, pos.coords.longitude]; if(userMarker) map.removeLayer(userMarker); userMarker = L.circleMarker(userLocation, { radius: 8, fillColor: "#007AFF", color: "#FFFFFF", weight: 3, opacity: 1, fillOpacity: 1 }).addTo(map); btnEl.disabled = false; textEl.innerText = defaultText; if(callback) callback(true); },
-                (err) => { btnEl.disabled = false; textEl.innerText = defaultText; alert("位置情報の取得に失敗しました。"); if(callback) callback(false); }, 
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
-        }
-
-        document.getElementById('gps-btn').addEventListener('click', (e) => fetchCurrentLocation(e.currentTarget, 'gps-btn-text', '現在地周辺を検索', (success) => { if(success) { map.flyTo(userLocation, 16); updateLists(); }}));
-        document.getElementById('btn-get-location').addEventListener('click', (e) => fetchCurrentLocation(e.currentTarget, 'add-gps-text', '現在地を取得', (success) => { if(success) addMap.flyTo(userLocation, 18) }));
-        
-        let is24hMode = false; const btn24h = document.getElementById('btn-24h'); const inputHours = document.getElementById('add-hours');
-        btn24h.addEventListener('click', () => { is24hMode = !is24hMode; if (is24hMode) { btn24h.classList.add('active'); inputHours.disabled = true; inputHours.value = ''; inputHours.placeholder = "24時間営業"; inputHours.removeAttribute('required'); } else { btn24h.classList.remove('active'); inputHours.disabled = false; inputHours.placeholder = "例: 09:00 - 18:00"; inputHours.setAttribute('required', 'true'); } });
-
-        window.flyToSpot = function(id) { const spot = allSpots.find(s => s.id === id); if (!spot) return; document.querySelector('[data-target="view-map"]').click(); map.flyTo([spot.latitude, spot.longitude], 18, { animate: true }); setTimeout(() => { if (spot.marker) spot.marker.openPopup(); }, 800); }
-
-        window.showDetail = function(id) {
-            const av = document.querySelector('.view-section.active'); if (av && av.id !== 'view-detail') previousView = av.id;
-            window.currentDetailSpotId = id; const spot = allSpots.find(s => s.id === id); if (!spot) return;
-            document.getElementById('detail-title').innerText = spot.name;
-            document.getElementById('detail-placename').innerHTML = `<span>${escapeHTML(spot.placename)}</span>` + (spot.floor ? `<span class="popup-floor">${escapeHTML(spot.floor)}</span>` : "");
-            document.getElementById('detail-meta').innerHTML = `<span>${escapeHTML(spot.available_hours) || "24時間営業"}</span>${getClosedDaysText(spot.closed_days)}`;
-            const imgEl = document.getElementById('detail-image'); if (spot.imageUrl) { imgEl.src = spot.imageUrl; imgEl.style.display = 'block'; } else { imgEl.style.display = 'none'; }
-            document.getElementById('detail-features').innerHTML = (spot.features||[]).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
-            loadComments(id);
-            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active')); document.getElementById('view-detail').classList.add('active'); window.scrollTo(0, 0);
-        }
-
-        window.goBack = function() { document.querySelector(`[data-target="${previousView}"]`).click(); }
-        window.flyToSpotFromDetail = function() { if (currentDetailSpotId) flyToSpot(currentDetailSpotId); }
-
-        function createListCard(spot, onClickAction) {
-            const os = isOpen(spot); const dt = spot.distance ? `<span class="dist-badge">${formatDistance(spot.distance)}</span>` : "";
-            const fh = (spot.features||[]).map(f => `<span class="feature-badge">${escapeHTML(f)}</span>`).join('');
-            return `<div class="spot-card clickable-card" onclick="${onClickAction}('${spot.id}')"><span class="status-badge ${os ? 'status-open' : 'status-closed'}">${os ? '営業中' : '時間外'}</span><div class="popup-placename mb-sm"><span>${escapeHTML(spot.placename)}</span> ${spot.floor ? `<span class="popup-floor">${escapeHTML(spot.floor)}</span>`:""}</div><div class="spot-title">${escapeHTML(spot.name)}</div><div class="mb-sm mt-sm">${fh}</div><div class="spot-meta">${dt}<span>${escapeHTML(spot.available_hours)||"24時間営業"}</span>${getClosedDaysText(spot.closed_days)}</div></div>`;
-        }
-
-        function createCompactCard(spot, onClickAction) {
-            const os = isOpen(spot); const dt = spot.distance ? `<span class="dist-badge">${formatDistance(spot.distance)}</span>` : "";
-            return `<div class="spot-card compact clickable-card" onclick="${onClickAction}('${spot.id}')"><span class="status-badge ${os ? 'status-open' : 'status-closed'}">${os ? '営業中' : '時間外'}</span><div class="popup-placename"><span>${escapeHTML(spot.placename)}</span></div><div class="spot-title">${escapeHTML(spot.name)}</div><div class="spot-meta">${dt}<span>${escapeHTML(spot.available_hours)||"24時間営業"}</span></div></div>`;
-        }
-
-        function updateLists() {
-            const mList = document.getElementById("map-visible-list"); const b = map.getBounds();
-            const vSpots = allSpots.filter(s => b.contains(L.latLng(s.latitude, s.longitude)));
-            mList.innerHTML = vSpots.length ? vSpots.map(s => createCompactCard(s, 'flyToSpot')).join('') : `<div class="empty-message-pill">このエリアに見つかりませんでした</div>`;
-            const fList = document.getElementById("full-spot-list"); const sortBy = document.getElementById("sort-select").value;
-            let dSpots = [...allSpots];
-            if (userLocation) dSpots.forEach(s => s.distance = getDistance(userLocation[0], userLocation[1], s.latitude, s.longitude));
-            if (filterOpenOnly) dSpots = dSpots.filter(s => isOpen(s));
-            if (sortBy === "distance" && userLocation) dSpots.sort((a, b) => a.distance - b.distance); else dSpots.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-            fList.innerHTML = dSpots.map(s => createListCard(s, 'showDetail')).join('') || "<p class='text-center text-sub mt-lg'>条件に合うスポットがありません</p>";
-            allSpots.forEach(spot => { const v = filterOpenOnly ? isOpen(spot) : true; if (v) { if (!map.hasLayer(spot.marker)) spot.marker.addTo(map); } else { if (map.hasLayer(spot.marker)) map.removeLayer(spot.marker); } });
-        }
-
-        window.loadSpots = async function() {
-            try {
-                // 承認済みのスポットのみを取得
-                const q = query(collection(db, "spots"), where("approved", "==", true));
-                const snap = await getDocs(q);
-                allSpots.forEach(s => { if(s.marker) map.removeLayer(s.marker); }); allSpots = [];
-                snap.forEach(doc => {
-                    const spot = doc.data(); spot.id = doc.id;
-                    if (spot.latitude && spot.longitude) {
-                        const m = L.marker([spot.latitude, spot.longitude], { icon: createCustomIcon(getPinColor(spot.features)) });
-                        m.bindPopup(`<div class="custom-popup"><div class="popup-placename"><span>${escapeHTML(spot.placename)}</span></div><div class="popup-title">${escapeHTML(spot.name)}</div><button class="popup-btn" onclick="showDetail('${spot.id}')">詳細を見る</button></div>`);
-                        spot.marker = m; m.addTo(map); allSpots.push(spot);
-                    }
-                });
-                updateLists();
-            } catch (err) { console.error("データ取得エラー:", err); document.getElementById("full-spot-list").innerHTML = "<p class='text-center text-danger mt-lg'>データの読み込みに失敗しました。</p>"; }
-        }
-
-        map.on('moveend', updateLists);
-        document.getElementById("sort-select").addEventListener('change', (e) => { if (e.target.value === "distance" && !userLocation) { if (confirm("現在地に近い順に並び替えるには、位置情報を取得しますか？")) { const btn = document.getElementById('gps-btn'); fetchCurrentLocation(btn, 'gps-btn-text', '現在地周辺を検索', (success) => { if(success) { document.getElementById("sort-select").value = "distance"; updateLists(); } else { e.target.value = "default"; }}); } else { e.target.value = "default"; } } else { updateLists(); } });
-        document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.currentTarget.classList.toggle('active'); updateLists(); });
-
-        // 画像アップロードのスコープエラーの修正
-        document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); 
-            const btn = document.getElementById('submit-btn'); 
-            btn.disabled = true; 
-            btn.innerText = "送信中...";
-            
-            try {
-                const name = document.getElementById('add-name').value; 
-                const placename = document.getElementById('add-placename').value; 
-                const floor = document.getElementById('add-floor').value; 
-                const hours = is24hMode ? "24時間営業" : document.getElementById('add-hours').value;
-                const features = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
-                const closed_days = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
-                
-                let imageUrl = null; 
-                const fileInput = document.getElementById('add-image');
-                
-                if (fileInput.files.length > 0) { 
-                    try {
-                        const compressedBlob = await compressImage(fileInput.files[0], 1024, 0.8);
-                        const randomStr = Math.random().toString(36).substring(2, 8); // 6桁のランダムな英数字
-                        const storageRef = ref(storage, 'spots/' + Date.now() + '_' + randomStr + '.jpg'); 
-                        await uploadBytes(storageRef, compressedBlob); 
-                        imageUrl = await getDownloadURL(storageRef); 
-                    } catch (err) {
-                        console.error("画像アップロードエラー:", err);
-                        alert("画像のアップロードに失敗しました。画像なしで登録します。");
-                    }
-                }
-                
-                // approved: false で申請として保存
-                await addDoc(collection(db, "spots"), { name, placename, floor, available_hours: hours, features, closed_days, latitude: addMap.currentLat, longitude: addMap.currentLng, imageUrl, approved: false, created_at: serverTimestamp() });
-                alert("申請が完了しました。管理者の承認後にマップに反映されます。"); 
-                e.target.reset(); 
-                if(is24hMode) btn24h.click(); 
-                document.querySelector('[data-target="view-map"]').click();
-            } catch (err) { 
-                alert("送信中にエラーが発生しました。"); 
-                console.error(err); 
-            } finally { 
-                btn.disabled = false; 
-                btn.innerText = "この内容で申請する"; 
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('admin-dashboard').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'none';
             }
         });
 
-        window.openReportModal = function() { document.getElementById('report-modal').style.display = 'flex'; }
-        window.closeReportModal = function() { document.getElementById('report-modal').style.display = 'none'; document.getElementById('report-text').value = ''; }
-        window.submitReport = async function() {
-            const cat = document.getElementById('report-category').value; const txt = document.getElementById('report-text').value; const btn = document.getElementById('submit-report-btn');
-            if(!txt) return alert("詳細を入力してください。");
-            btn.disabled = true; btn.innerText = "送信中...";
-            try { await addDoc(collection(db, "reports"), { spotId: window.currentDetailSpotId, category: cat, text: txt, created_at: serverTimestamp(), resolved: false }); alert("報告を送信しました。ご協力ありがとうございます。"); closeReportModal(); } catch(e) { alert("送信に失敗しました。"); } finally { btn.disabled = false; btn.innerText = "送信"; }
+        document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, googleProvider));
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+        // データを一括で読み込む
+        async function loadAllAdminData() {
+            // まず全スポットの名前を取得してキャッシュ（報告やコメントの表示で使うため）
+            try {
+                const snap = await getDocs(collection(db, "spots"));
+                snap.forEach(d => { spotsCache[d.id] = d.data().name; });
+            } catch(e) { console.error("スポット名のキャッシュに失敗", e); }
+
+            loadUnapprovedSpots();
+            loadReports();
+            loadComments();
         }
 
-        async function loadComments(spotId) {
-            const list = document.getElementById('detail-comments-list'); list.innerHTML = '<p class="text-sub">読込中...</p>';
-            try { const qSnap = await getDocs(collection(db, "spots", spotId, "comments")); let cmts = []; qSnap.forEach(d => cmts.push(d.data())); cmts.sort((a, b) => {
-    const timeA = a.created_at ? a.created_at.toMillis() : Date.now();
-    const timeB = b.created_at ? b.created_at.toMillis() : Date.now();
-    return timeA - timeB;
-}); list.innerHTML = cmts.length ? cmts.map(c => `<div class="comment-item"><div class="comment-header"><span class="comment-name">${escapeHTML(c.name)||'名無しさん'}</span><span class="text-sub">${new Date(c.created_at?.toMillis()||Date.now()).toLocaleString('ja-JP')}</span></div><div class="comment-text">${escapeHTML(c.text)}</div></div>`).join('') : '<p class="text-sub">まだコメントはありません。</p>'; } catch { list.innerHTML = '<p class="text-danger">読み込みに失敗しました</p>'; }
+        // 1. 承認待ちスポットの読み込み
+        async function loadUnapprovedSpots() {
+            const list = document.getElementById('unapproved-list');
+            try {
+                const q = query(collection(db, "spots"), where("approved", "==", false));
+                const snap = await getDocs(q);
+                let html = '';
+                snap.forEach(doc => {
+                    const s = doc.data();
+                    html += `
+                        <div class="item-row">
+                            <h3 style="margin-bottom: 4px;">${escapeHTML(s.name)}</h3>
+                            <div class="item-meta">場所: ${escapeHTML(s.placename)} ${s.floor ? `(${escapeHTML(s.floor)})` : ''} | 申請日時: ${formatDate(s.created_at)}</div>
+                            <div class="item-meta">特徴: ${(s.features || []).join(', ')} | 時間: ${escapeHTML(s.available_hours)}</div>
+                            ${s.imageUrl ? `<a href="${s.imageUrl}" target="_blank"><img src="${s.imageUrl}" class="spot-img"></a>` : ''}
+                            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                                <button class="btn" onclick="approveSpot('${doc.id}')">承認して公開</button>
+                                <button class="btn btn-danger" onclick="deleteSpot('${doc.id}')">削除 (却下)</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || '<p>現在、承認待ちのスポットはありません。</p>';
+            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
         }
-        document.getElementById('add-comment-form').addEventListener('submit', async(e) => { 
-            e.preventDefault(); if(!window.currentDetailSpotId) return; const btn = document.getElementById('submit-comment-btn'); btn.disabled=true; btn.innerText="送信中..."; 
-            try{ await addDoc(collection(db,"spots",window.currentDetailSpotId,"comments"), {name:document.getElementById('comment-name').value, text:document.getElementById('comment-text').value, created_at:serverTimestamp()}); e.target.reset(); await loadComments(window.currentDetailSpotId); btn.innerText="完了"; setTimeout(()=>{btn.disabled=false;btn.innerText="コメントを送信";},2000); }catch(err){alert('送信に失敗しました'); btn.disabled=false; btn.innerText="コメントを送信";} 
-        });
 
-        loadSpots();
+        // 2. 未解決の報告の読み込み
+        async function loadReports() {
+            const list = document.getElementById('reports-list');
+            try {
+                const q = query(collection(db, "reports"), where("resolved", "==", false));
+                const snap = await getDocs(q);
+                let html = '';
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    const spotName = spotsCache[r.spotId] || "不明/削除されたスポット";
+                    html += `
+                        <div class="item-row">
+                            <div class="item-meta">
+                                <span class="badge badge-warning">${escapeHTML(r.category)}</span>
+                                対象: <strong>${escapeHTML(spotName)}</strong> (ID: ${r.spotId}) | 報告日時: ${formatDate(r.created_at)}
+                            </div>
+                            <div class="item-content">${escapeHTML(r.text)}</div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-success" onclick="resolveReport('${doc.id}')">解決済みにする</button>
+                                <button class="btn btn-danger" onclick="deleteReport('${doc.id}')">この報告を削除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || '<p>現在、未解決の報告はありません。</p>';
+            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
+        }
 
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                navItems.forEach(n => n.classList.remove('active')); item.classList.add('active');
-                document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-                const tid = item.dataset.target; if (tid !== 'view-detail') previousView = tid;
-                document.getElementById(tid).classList.add('active');
-                if (tid === 'view-map') requestAnimationFrame(() => map.invalidateSize());
-                if (tid === 'view-add') { initAddMap(); setTimeout(() => { if(addMap) addMap.invalidateSize(); }, 100); }
-                window.scrollTo(0, 0);
-            });
-        });
+        // 3. 最新コメントの読み込み (collectionGroupを使用)
+        async function loadComments() {
+            const list = document.getElementById('comments-list');
+            try {
+                const q = query(collectionGroup(db, "comments"));
+                const snap = await getDocs(q);
+                let cmts = [];
+                snap.forEach(d => {
+                    // 親ドキュメントのID(スポットID)を取得
+                    const spotId = d.ref.parent.parent.id;
+                    cmts.push({ id: d.id, spotId: spotId, ...d.data() });
+                });
+                
+                // JavaScript側で新しい順に並び替え（インデックス作成エラーを回避するため）
+                cmts.sort((a, b) => (b.created_at?.toMillis() || 0) - (a.created_at?.toMillis() || 0));
+                
+                let html = '';
+                // 最新の30件だけ表示
+                cmts.slice(0, 30).forEach(c => {
+                    const spotName = spotsCache[c.spotId] || "不明/削除されたスポット";
+                    html += `
+                        <div class="item-row">
+                            <div class="item-meta">
+                                スポット: <strong>${escapeHTML(spotName)}</strong> | 
+                                投稿者: ${escapeHTML(c.name) || '名無しさん'} | 
+                                日時: ${formatDate(c.created_at)}
+                            </div>
+                            <div class="item-content">${escapeHTML(c.text)}</div>
+                            <div>
+                                <button class="btn btn-danger" onclick="deleteComment('${c.spotId}', '${c.id}')">このコメントを削除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || '<p>コメントはまだありません。</p>';
+            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
+        }
+
+        // --- 各種アクション（グローバル関数として定義） ---
+
+        // スポット関連
+        window.approveSpot = async function(id) {
+            if(!confirm("承認して一般公開しますか？")) return;
+            await updateDoc(doc(db, "spots", id), { approved: true });
+            alert("承認しました"); loadAllAdminData();
+        };
+        window.deleteSpot = async function(id) {
+            if(!confirm("本当に削除しますか？\n(悪質な申請などの場合にのみ使用してください)")) return;
+            await deleteDoc(doc(db, "spots", id));
+            alert("削除しました"); loadAllAdminData();
+        };
+
+        // 報告関連
+        window.resolveReport = async function(id) {
+            if(!confirm("この報告を「解決済み」にしますか？\n(リストから非表示になります)")) return;
+            await updateDoc(doc(db, "reports", id), { resolved: true });
+            loadReports(); // 報告リストだけ更新
+        };
+        window.deleteReport = async function(id) {
+            if(!confirm("この報告を完全に削除しますか？")) return;
+            await deleteDoc(doc(db, "reports", id));
+            loadReports();
+        };
+
+        // コメント関連
+        window.deleteComment = async function(spotId, commentId) {
+            if(!confirm("不適切なコメントとして削除しますか？\nこの操作は元に戻せません。")) return;
+            await deleteDoc(doc(db, "spots", spotId, "comments", commentId));
+            alert("コメントを削除しました"); loadComments();
+        };
     </script>
 </body>
 </html>
