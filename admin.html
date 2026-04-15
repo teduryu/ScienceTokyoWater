@@ -65,8 +65,11 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, collectionGroup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        // ★修正: orderBy, limit を追加インポート
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, collectionGroup, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        // ★修正: Storageの操作用モジュールをインポート
+        import { getStorage, ref as storageRef, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
         // Firebase設定
         const firebaseConfig = {
@@ -77,6 +80,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const storage = getStorage(app); // ★修正: Storageを初期化
         const googleProvider = new GoogleAuthProvider();
 
         // 管理用メールアドレス
@@ -114,7 +118,7 @@
 
         // データを一括で読み込む
         async function loadAllAdminData() {
-            // まず全スポットの名前を取得してキャッシュ（報告やコメントの表示で使うため）
+            // まず全スポットの名前を取得してキャッシュ
             try {
                 const snap = await getDocs(collection(db, "spots"));
                 snap.forEach(d => { spotsCache[d.id] = d.data().name; });
@@ -180,24 +184,21 @@
         }
 
         // 3. 最新コメントの読み込み (collectionGroupを使用)
+        // ★修正: パフォーマンス改善のため、全件取得を廃止し orderBy と limit(30) を使用したクエリに変更
         async function loadComments() {
             const list = document.getElementById('comments-list');
             try {
-                const q = query(collectionGroup(db, "comments"));
+                // ※このクエリを実行するにはFirestoreコンソールでインデックスの作成が必要です
+                const q = query(collectionGroup(db, "comments"), orderBy("created_at", "desc"), limit(30));
                 const snap = await getDocs(q);
                 let cmts = [];
                 snap.forEach(d => {
-                    // 親ドキュメントのID(スポットID)を取得
                     const spotId = d.ref.parent.parent.id;
                     cmts.push({ id: d.id, spotId: spotId, ...d.data() });
                 });
                 
-                // JavaScript側で新しい順に並び替え（インデックス作成エラーを回避するため）
-                cmts.sort((a, b) => (b.created_at?.toMillis() || 0) - (a.created_at?.toMillis() || 0));
-                
                 let html = '';
-                // 最新の30件だけ表示
-                cmts.slice(0, 30).forEach(c => {
+                cmts.forEach(c => {
                     const spotName = spotsCache[c.spotId] || "不明/削除されたスポット";
                     html += `
                         <div class="item-row">
@@ -214,28 +215,59 @@
                     `;
                 });
                 list.innerHTML = html || '<p>コメントはまだありません。</p>';
-            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
+            } catch (e) { 
+                list.innerHTML = `<p style="color:red;">エラー: ${e.message}<br>※コメントの読み込みに失敗しました。Firebase Consoleで複合インデックス（comments, created_at:降順）が作成されているか確認してください。</p>`; 
+            }
         }
 
         // --- 各種アクション（グローバル関数として定義） ---
 
-        // スポット関連
         window.approveSpot = async function(id) {
             if(!confirm("承認して一般公開しますか？")) return;
             await updateDoc(doc(db, "spots", id), { approved: true });
             alert("承認しました"); loadAllAdminData();
         };
+
+        // ★修正: スポット削除時に紐づく画像とコメント（サブコレクション）もカスケード削除する
         window.deleteSpot = async function(id) {
-            if(!confirm("本当に削除しますか？\n(悪質な申請などの場合にのみ使用してください)")) return;
-            await deleteDoc(doc(db, "spots", id));
-            alert("削除しました"); loadAllAdminData();
+            if(!confirm("本当に削除しますか？\n紐づく画像やコメントも完全に削除されます。")) return;
+            
+            try {
+                const spotRef = doc(db, "spots", id);
+                const spotSnap = await getDocs(query(collection(db, "spots"), where("__name__", "==", id))); 
+                
+                // 1. Storageの画像を削除
+                if (!spotSnap.empty && spotSnap.docs[0].data().imageUrl) {
+                    const imgUrl = spotSnap.docs[0].data().imageUrl;
+                    try {
+                        const imgRef = storageRef(storage, imgUrl);
+                        await deleteObject(imgRef);
+                    } catch (e) {
+                        console.warn("画像削除スキップ(既に存在しない可能性があります):", e);
+                    }
+                }
+
+                // 2. コメント(サブコレクション)の削除
+                const commentsSnap = await getDocs(collection(db, "spots", id, "comments"));
+                const deletePromises = commentsSnap.docs.map(d => deleteDoc(d.ref));
+                await Promise.all(deletePromises);
+
+                // 3. スポット本体の削除
+                await deleteDoc(spotRef);
+                
+                alert("完全に削除しました");
+                loadAllAdminData();
+            } catch (err) {
+                console.error("削除エラー:", err);
+                alert("削除に失敗しました");
+            }
         };
 
         // 報告関連
         window.resolveReport = async function(id) {
             if(!confirm("この報告を「解決済み」にしますか？\n(リストから非表示になります)")) return;
             await updateDoc(doc(db, "reports", id), { resolved: true });
-            loadReports(); // 報告リストだけ更新
+            loadReports(); 
         };
         window.deleteReport = async function(id) {
             if(!confirm("この報告を完全に削除しますか？")) return;
