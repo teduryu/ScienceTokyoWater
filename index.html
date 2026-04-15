@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScienceTokyoWater - 給水スポットマップ</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         :root { --primary: #007AFF; --bg-base: #F2F4F7; --surface: #FFFFFF; --text-main: #1C1C1E; --text-sub: #8E8E93; --danger: #FF3B30; --success: #34C759; --border: #E5E5EA; }
         body { font-family: 'Noto Sans JP', sans-serif; margin: 0; padding: 0; background: var(--bg-base); color: var(--text-main); }
-        #map { width: 100%; height: 100vh; }
+        #map { width: 100%; height: 100vh; z-index: 1; }
         
         /* UI Components */
         .btn { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -16,7 +20,7 @@
         .floating-btn { position: absolute; bottom: 24px; right: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 50%; width: 60px; height: 60px; font-size: 24px; z-index: 10; display: flex; align-items: center; justify-content: center;}
         
         /* Modals */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: var(--surface); padding: 24px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; }
         .close-btn { position: absolute; top: 16px; right: 16px; font-size: 24px; cursor: pointer; color: var(--text-sub); }
         
@@ -37,6 +41,9 @@
         .comment-item { border-bottom: 1px solid var(--border); padding: 12px 0; }
         .comment-item:last-child { border-bottom: none; }
         .comment-meta { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 4px; }
+
+        /* Leaflet カスタムアイコン用 */
+        .custom-leaflet-icon { background: none; border: none; }
     </style>
 </head>
 <body>
@@ -124,7 +131,7 @@
         let currentTempLocation = null;
         let currentSpotId = null;
 
-        // グローバル関数化 (onclick対応)
+        // グローバル関数化
         window.openAddSpotModal = () => {
             if(!currentTempLocation) {
                 alert("マップをタップして追加したい場所を指定してください");
@@ -160,7 +167,7 @@
             });
         }
 
-        // 営業時間判定 (堅牢版)
+        // 営業時間判定
         function isOpen(spot) {
             const hs = spot.available_hours;
             if (!hs || hs.includes("24時間") || hs === "不明") return true;
@@ -177,21 +184,24 @@
                 const startMins = parseTime(parts[0]);
                 const endMins = parseTime(parts[1]);
 
-                if (endMins < startMins) return currentMinutes >= startMins || currentMinutes <= endMins; // 日またぎ
+                if (endMins < startMins) return currentMinutes >= startMins || currentMinutes <= endMins; 
                 return currentMinutes >= startMins && currentMinutes <= endMins;
             } catch (e) { return true; }
         }
 
-        async function initMap() {
-            const { Map } = await google.maps.importLibrary("maps");
-            map = new Map(document.getElementById("map"), {
-                center: { lat: 35.6048, lng: 139.6837 }, // 東工大大岡山キャンパス付近
-                zoom: 16,
-                mapId: "DEMO_MAP_ID" // AdvancedMarker用必須（任意の文字列で動作しますが、将来的にご自身のMap IDを作成推奨）
-            });
+        // OpenStreetMap (Leaflet) の初期化
+        function initMap() {
+            // 東工大大岡山キャンパス付近を中心に設定
+            map = L.map('map').setView([35.6048, 139.6837], 16);
 
-            map.addListener("click", (e) => {
-                currentTempLocation = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // マップタップ時のイベント
+            map.on("click", (e) => {
+                currentTempLocation = { lat: e.latlng.lat, lng: e.latlng.lng };
                 alert("位置を記録しました。右下の＋ボタンからスポットを追加できます。");
             });
 
@@ -205,23 +215,33 @@
             renderMarkers();
         }
 
-        async function renderMarkers() {
-            markers.forEach(m => m.setMap(null));
+        // 色付きのカスタムSVGピンを生成する関数
+        function getCustomIcon(isSpotOpen) {
+            const color = isSpotOpen ? "#34C759" : "#8E8E93"; // 緑 or 灰色
+            const svgIcon = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" width="36px" height="36px" style="filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.3));">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>`;
+            return L.divIcon({
+                className: 'custom-leaflet-icon',
+                html: svgIcon,
+                iconSize: [36, 36],
+                iconAnchor: [18, 36] // ピンの先端を座標に合わせる
+            });
+        }
+
+        function renderMarkers() {
+            // 既存のマーカーを削除
+            markers.forEach(m => map.removeLayer(m));
             markers = [];
-            const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
 
             spots.forEach(spot => {
                 const isSpotOpen = isOpen(spot);
-                const pin = new PinElement({
-                    background: isSpotOpen ? "#34C759" : "#8E8E93",
-                    borderColor: isSpotOpen ? "#248A3D" : "#636366",
-                    glyphColor: "white",
-                });
-                const marker = new AdvancedMarkerElement({
-                    map, position: { lat: spot.lat, lng: spot.lng },
-                    title: spot.name, content: pin.element
-                });
-                marker.addListener("click", () => showSpotDetail(spot));
+                const marker = L.marker([spot.lat, spot.lng], { 
+                    icon: getCustomIcon(isSpotOpen) 
+                }).addTo(map);
+                
+                marker.on("click", () => showSpotDetail(spot));
                 markers.push(marker);
             });
         }
@@ -247,7 +267,7 @@
             document.getElementById('spot-detail-modal').style.display = 'flex';
         }
 
-        // コメント読み込み (リアルタイム)
+        // コメント読み込み
         let unsubscribeComments = null;
         function loadComments(spotId) {
             if (unsubscribeComments) unsubscribeComments();
@@ -331,12 +351,8 @@
 
         function escapeHTML(str) { return str.replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m])); }
 
-        // Maps APIの動的読み込み (いただいたAPIキーを適用済み)
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBVH0SUVAv0SiZvrPnsjrmZV3Hz8VVH2XM&libraries=marker&callback=initMapInit`;
-        script.async = true; script.defer = true;
-        window.initMapInit = initMap;
-        document.head.appendChild(script);
+        // マップ初期化処理の実行
+        initMap();
 
     </script>
 </body>
