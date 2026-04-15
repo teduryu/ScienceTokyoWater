@@ -341,7 +341,7 @@
             navigator.geolocation.getCurrentPosition(
                 (pos) => { userLocation = [pos.coords.latitude, pos.coords.longitude]; if(userMarker) map.removeLayer(userMarker); userMarker = L.circleMarker(userLocation, { radius: 8, fillColor: "#007AFF", color: "#FFFFFF", weight: 3, opacity: 1, fillOpacity: 1 }).addTo(map); btnEl.disabled = false; textEl.innerText = defaultText; if(callback) callback(true); },
                 (err) => { btnEl.disabled = false; textEl.innerText = defaultText; alert("位置情報の取得に失敗しました。"); if(callback) callback(false); }, 
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
             );
         }
 
