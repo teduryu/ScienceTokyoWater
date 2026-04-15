@@ -291,26 +291,27 @@
         
         // 深夜（日またぎ）営業判定の修正
         function isOpen(spot) {
-    const hs = spot.available_hours || "24時間営業";
-    if (hs.includes("24時間") || hs === "不明") {
-        return !(spot.closed_days ||[]).includes(new Date().getDay());
-    }
-    
-    try {
-        const now = new Date();
-        const currentDay = now.getDay();
-        const prevDay = currentDay === 0 ? 6 : currentDay - 1; // 前日の曜日
-        const ct = now.getHours() * 60 + now.getMinutes(); // 現在の分
-        
-        const p = hs.replace(/[～~]/g, '-').split('-');
-        if (p.length < 2) return true;
-        
-        const s = p[0].trim().split(':').map(Number);
-        const e = p[1].trim().split(':').map(Number);
-        const startMins = s[0] * 60 + s[1];
-        const endMins = e[0] * 60 + e[1];
-        
-        const closedDays = spot.closed_days ||
+            const hs = spot.available_hours || "24時間営業";
+            const cd = new Date().getDay();
+            if ((spot.closed_days || []).includes(cd)) return false;
+            if (hs.includes("24時間") || hs === "不明") return true;
+            try {
+                const ct = new Date().getHours() * 60 + new Date().getMinutes();
+                const p = hs.replace(/[～~]/g, '-').split('-');
+                if (p.length < 2) return true;
+                const s = p[0].trim().split(':').map(Number);
+                const e = p[1].trim().split(':').map(Number);
+                const startMins = s[0] * 60 + s[1];
+                const endMins = e[0] * 60 + e[1];
+                
+                if (startMins <= endMins) {
+                    return ct >= startMins && ct <= endMins;
+                } else {
+                    // 日またぎの営業時間 (例: 22:00 - 02:00)
+                    return ct >= startMins || ct <= endMins;
+                }
+            } catch { return true; }
+        }
 
         function getClosedDaysText(c) { return (!c || c.length===0) ? "" : `<span class="text-danger" style="margin-left:8px;">休: ${c.map(d => ["日","月","火","水","木","金","土","祝"][d]).join(',')}</span>`; }
         function getPinColor(f) { if (!f) return "var(--pin-default)"; if (f.includes("お湯")) return "var(--pin-hot)"; if (f.includes("給水機")) return "var(--pin-machine)"; if (f.includes("蛇口")) return "var(--pin-tap)"; return "var(--pin-default)"; }
