@@ -212,6 +212,7 @@
                     clone.querySelector('.spot-meta-2').textContent = meta2;
                     
                     if (data.imageUrl) {
+                        if (data.imageUrl.startsWith('http://') || data.imageUrl.startsWith('https://')) {
                         const imgLink = document.createElement('a');
                         imgLink.href = data.imageUrl;
                         imgLink.target = "_blank";
@@ -220,6 +221,9 @@
                         img.className = "spot-img";
                         imgLink.appendChild(img);
                         clone.querySelector('.spot-img-container').appendChild(imgLink);
+                        } else {
+        clone.querySelector('.spot-img-container').textContent = "⚠️ 不正な画像URLがブロックされました";
+    }
                     }
                     
                     clone.querySelector('.btn-approve').addEventListener('click', () => handleApproveSpot(docId));
