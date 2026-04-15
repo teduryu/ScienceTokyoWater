@@ -409,7 +409,19 @@ btn24h.addEventListener('click', () => {
             if (filterOpenOnly) dSpots = dSpots.filter(s => isOpen(s));
             if (sortBy === "distance" && userLocation) dSpots.sort((a, b) => a.distance - b.distance); else dSpots.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
             fList.innerHTML = dSpots.map(s => createListCard(s, 'showDetail')).join('') || "<p class='text-center text-sub mt-lg'>条件に合うスポットがありません</p>";
-            allSpots.forEach(spot => { const v = filterOpenOnly ? isOpen(spot) : true; if (v) { if (!map.hasLayer(spot.marker)) spot.marker.addTo(map); } else { if (map.hasLayer(spot.marker)) map.removeLayer(spot.marker); } });
+            allSpots.forEach(spot => { 
+    // 営業状態に応じてピンの色を動的に更新
+    const pinColor = isOpen(spot) ? "var(--success)" : "var(--pin-default)";
+    spot.marker.setIcon(createCustomIcon(pinColor));
+    
+    // 絞り込みフィルターの処理
+    const v = filterOpenOnly ? isOpen(spot) : true; 
+    if (v) { 
+        if (!map.hasLayer(spot.marker)) spot.marker.addTo(map); 
+    } else { 
+        if (map.hasLayer(spot.marker)) map.removeLayer(spot.marker); 
+    } 
+});
         }
 
         window.loadSpots = async function() {
@@ -421,7 +433,8 @@ btn24h.addEventListener('click', () => {
                 snap.forEach(doc => {
                     const spot = doc.data(); spot.id = doc.id;
                     if (spot.latitude && spot.longitude) {
-                        const m = L.marker([spot.latitude, spot.longitude], { icon: createCustomIcon(getPinColor(spot.features)) });
+                        const pinColor = isOpen(spot) ? "var(--success)" : "var(--pin-default)";
+                        const m = L.marker([spot.latitude, spot.longitude], { icon: createCustomIcon(pinColor) });
                         m.bindPopup(`<div class="custom-popup"><div class="popup-placename"><span>${escapeHTML(spot.placename)}</span></div><div class="popup-title">${escapeHTML(spot.name)}</div><button class="popup-btn" onclick="showDetail('${spot.id}')">詳細を見る</button></div>`);
                         spot.marker = m; m.addTo(map); allSpots.push(spot);
                     }
