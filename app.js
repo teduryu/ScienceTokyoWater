@@ -434,7 +434,7 @@ async function loadComments(spotId) {
         cmts.sort((a, b) => {
             const timeA = a.created_at ? a.created_at.toMillis() : Date.now();
             const timeB = b.created_at ? b.created_at.toMillis() : Date.now();
-            return timeA - timeB; // 古い順
+            return timeA - timeB; // 古い順にソート
         }); 
         
         list.innerHTML = cmts.length 
@@ -447,7 +447,8 @@ async function loadComments(spotId) {
                     <div class="comment-text">${escapeHTML(c.text)}</div>
                 </div>`).join('') 
             : '<p class="text-sub">まだコメントはありません。</p>'; 
-    } catch { 
+    } catch(err) { 
+        console.error("コメントの読み込みに失敗:", err);
         list.innerHTML = '<p class="text-danger">読み込みに失敗しました</p>'; 
     }
 }
