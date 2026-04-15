@@ -63,15 +63,57 @@
         </div>
     </div>
 
+    <template id="tmpl-unapproved">
+        <div class="item-row">
+            <h3 class="spot-name" style="margin-bottom: 4px;"></h3>
+            <div class="item-meta spot-meta-1"></div>
+            <div class="item-meta spot-meta-2"></div>
+            <div class="spot-img-container"></div>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                <button class="btn btn-approve">承認して公開</button>
+                <button class="btn btn-danger btn-delete">削除 (却下)</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="tmpl-report">
+        <div class="item-row">
+            <div class="item-meta">
+                <span class="badge badge-warning report-category"></span>
+                対象: <strong class="report-spot-name"></strong> <span class="report-spot-id"></span> | 報告日時: <span class="report-date"></span>
+            </div>
+            <div class="item-content report-text"></div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-success btn-resolve">解決済みにする</button>
+                <button class="btn btn-danger btn-delete-report">この報告を削除</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="tmpl-comment">
+        <div class="item-row">
+            <div class="item-meta">
+                スポット: <strong class="comment-spot-name"></strong> | 
+                投稿者: <span class="comment-author"></span> | 
+                日時: <span class="comment-date"></span>
+            </div>
+            <div class="item-content comment-text"></div>
+            <div>
+                <button class="btn btn-danger btn-delete-comment">このコメントを削除</button>
+            </div>
+        </div>
+    </template>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        // ★修正: orderBy, limit を追加インポート
-        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, collectionGroup, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { 
+            getFirestore, collection, getDocs, getDoc, doc, updateDoc, deleteDoc, 
+            query, where, collectionGroup, orderBy, limit 
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-        // ★修正: Storageの操作用モジュールをインポート
         import { getStorage, ref as storageRef, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-        // Firebase設定
+        // ===== 初期設定 =====
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg", authDomain: "sciencetokyowater.firebaseapp.com",
             projectId: "sciencetokyowater", storageBucket: "sciencetokyowater.firebasestorage.app",
@@ -80,207 +122,270 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app); // ★修正: Storageを初期化
+        const storage = getStorage(app);
         const googleProvider = new GoogleAuthProvider();
-
-        // 管理用メールアドレス
         const ADMIN_EMAILS = ['teduryu@gmail.com'];
 
-        // XSS対策用
-        function escapeHTML(str) { return typeof str === 'string' ? str.replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m])) : ''; }
-        function formatDate(timestamp) { return timestamp ? new Date(timestamp.toMillis()).toLocaleString('ja-JP') : '日時不明'; }
+        // ===== ユーティリティ関数 =====
+        function formatDate(timestamp) {
+            if (!timestamp) return '日時不明';
+            return new Date(timestamp.toMillis()).toLocaleString('ja-JP');
+        }
 
-        // スポットのIDと名前を紐付けるためのキャッシュ
-        let spotsCache = {};
-
-        // 認証状態の監視
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                if (ADMIN_EMAILS.includes(user.email)) {
-                    document.getElementById('auth-section').style.display = 'none';
-                    document.getElementById('admin-dashboard').style.display = 'block';
-                    document.getElementById('logout-btn').style.display = 'block';
-                    document.getElementById('admin-email-disp').innerText = user.email;
-                    loadAllAdminData();
-                } else {
-                    document.getElementById('auth-error').style.display = 'block';
-                    document.getElementById('auth-error').innerText = `エラー: アカウント (${user.email}) には管理者権限がありません。`;
+        // --- 全件キャッシュの廃止とオンデマンド取得 ---
+        const spotsCache = {};
+        
+        async function getSpotName(spotId) {
+            if (spotsCache[spotId]) return spotsCache[spotId];
+            
+            try {
+                const spotDoc = await getDoc(doc(db, "spots", spotId));
+                if (spotDoc.exists()) {
+                    const name = spotDoc.data().name;
+                    spotsCache[spotId] = name;
+                    return name;
                 }
+            } catch (e) {
+                console.warn(`スポット名取得エラー (ID: ${spotId})`, e);
+            }
+            
+            spotsCache[spotId] = "不明/削除されたスポット";
+            return spotsCache[spotId];
+        }
+
+        // ===== 認証状態の監視 =====
+        onAuthStateChanged(auth, (user) => {
+            if (user && ADMIN_EMAILS.includes(user.email)) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('admin-dashboard').style.display = 'block';
+                document.getElementById('logout-btn').style.display = 'block';
+                document.getElementById('admin-email-disp').innerText = user.email;
+                renderAllData();
             } else {
                 document.getElementById('auth-section').style.display = 'block';
                 document.getElementById('admin-dashboard').style.display = 'none';
                 document.getElementById('logout-btn').style.display = 'none';
+                if (user) {
+                    const errorEl = document.getElementById('auth-error');
+                    errorEl.style.display = 'block';
+                    errorEl.innerText = `エラー: アカウント (${user.email}) には管理者権限がありません。`;
+                }
             }
         });
 
         document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, googleProvider));
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // データを一括で読み込む
-        async function loadAllAdminData() {
-            // まず全スポットの名前を取得してキャッシュ
-            try {
-                const snap = await getDocs(collection(db, "spots"));
-                snap.forEach(d => { spotsCache[d.id] = d.data().name; });
-            } catch(e) { console.error("スポット名のキャッシュに失敗", e); }
-
-            loadUnapprovedSpots();
-            loadReports();
-            loadComments();
+        function renderAllData() {
+            renderUnapprovedSpots();
+            renderReports();
+            renderComments();
         }
 
-        // 1. 承認待ちスポットの読み込み
-        async function loadUnapprovedSpots() {
-            const list = document.getElementById('unapproved-list');
+        // ===== 1. 承認待ちスポット =====
+        async function renderUnapprovedSpots() {
+            const listContainer = document.getElementById('unapproved-list');
+            listContainer.innerHTML = '';
+            
             try {
                 const q = query(collection(db, "spots"), where("approved", "==", false));
                 const snap = await getDocs(q);
-                let html = '';
-                snap.forEach(doc => {
-                    const s = doc.data();
-                    html += `
-                        <div class="item-row">
-                            <h3 style="margin-bottom: 4px;">${escapeHTML(s.name)}</h3>
-                            <div class="item-meta">場所: ${escapeHTML(s.placename)} ${s.floor ? `(${escapeHTML(s.floor)})` : ''} | 申請日時: ${formatDate(s.created_at)}</div>
-                            <div class="item-meta">特徴: ${(s.features || []).join(', ')} | 時間: ${escapeHTML(s.available_hours)}</div>
-                            ${s.imageUrl ? `<a href="${s.imageUrl}" target="_blank"><img src="${s.imageUrl}" class="spot-img"></a>` : ''}
-                            <div style="margin-top: 12px; display: flex; gap: 8px;">
-                                <button class="btn" onclick="approveSpot('${doc.id}')">承認して公開</button>
-                                <button class="btn btn-danger" onclick="deleteSpot('${doc.id}')">削除 (却下)</button>
-                            </div>
-                        </div>
-                    `;
+                
+                if (snap.empty) {
+                    listContainer.innerHTML = '<p>現在、承認待ちのスポットはありません。</p>';
+                    return;
+                }
+                
+                const tmpl = document.getElementById('tmpl-unapproved');
+                
+                snap.forEach(documentSnapshot => {
+                    const docId = documentSnapshot.id;
+                    const data = documentSnapshot.data();
+                    const clone = tmpl.content.cloneNode(true);
+                    
+                    clone.querySelector('.spot-name').textContent = data.name;
+                    
+                    const meta1 = `場所: ${data.placename || ''} ${data.floor ? `(${data.floor})` : ''} | 申請日時: ${formatDate(data.created_at)}`;
+                    clone.querySelector('.spot-meta-1').textContent = meta1;
+                    
+                    const meta2 = `特徴: ${(data.features || []).join(', ')} | 時間: ${data.available_hours || '不明'}`;
+                    clone.querySelector('.spot-meta-2').textContent = meta2;
+                    
+                    if (data.imageUrl) {
+                        const imgLink = document.createElement('a');
+                        imgLink.href = data.imageUrl;
+                        imgLink.target = "_blank";
+                        const img = document.createElement('img');
+                        img.src = data.imageUrl;
+                        img.className = "spot-img";
+                        imgLink.appendChild(img);
+                        clone.querySelector('.spot-img-container').appendChild(imgLink);
+                    }
+                    
+                    clone.querySelector('.btn-approve').addEventListener('click', () => handleApproveSpot(docId));
+                    clone.querySelector('.btn-delete').addEventListener('click', () => handleDeleteSpot(docId));
+                    
+                    listContainer.appendChild(clone);
                 });
-                list.innerHTML = html || '<p>現在、承認待ちのスポットはありません。</p>';
-            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
+            } catch (e) {
+                listContainer.innerHTML = `<p style="color:red;">読み込みエラー: ${e.message}</p>`;
+            }
         }
 
-        // 2. 未解決の報告の読み込み
-        async function loadReports() {
-            const list = document.getElementById('reports-list');
+        // ===== 2. 未解決の報告 =====
+        async function renderReports() {
+            const listContainer = document.getElementById('reports-list');
+            listContainer.innerHTML = '';
+            
             try {
                 const q = query(collection(db, "reports"), where("resolved", "==", false));
                 const snap = await getDocs(q);
-                let html = '';
-                snap.forEach(doc => {
-                    const r = doc.data();
-                    const spotName = spotsCache[r.spotId] || "不明/削除されたスポット";
-                    html += `
-                        <div class="item-row">
-                            <div class="item-meta">
-                                <span class="badge badge-warning">${escapeHTML(r.category)}</span>
-                                対象: <strong>${escapeHTML(spotName)}</strong> (ID: ${r.spotId}) | 報告日時: ${formatDate(r.created_at)}
-                            </div>
-                            <div class="item-content">${escapeHTML(r.text)}</div>
-                            <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-success" onclick="resolveReport('${doc.id}')">解決済みにする</button>
-                                <button class="btn btn-danger" onclick="deleteReport('${doc.id}')">この報告を削除</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                list.innerHTML = html || '<p>現在、未解決の報告はありません。</p>';
-            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
-        }
-
-        // 3. 最新コメントの読み込み (collectionGroupを使用)
-        // ★修正: パフォーマンス改善のため、全件取得を廃止し orderBy と limit(30) を使用したクエリに変更
-        async function loadComments() {
-            const list = document.getElementById('comments-list');
-            try {
-                // ※このクエリを実行するにはFirestoreコンソールでインデックスの作成が必要です
-                const q = query(collectionGroup(db, "comments"), orderBy("created_at", "desc"), limit(30));
-                const snap = await getDocs(q);
-                let cmts = [];
-                snap.forEach(d => {
-                    const spotId = d.ref.parent.parent.id;
-                    cmts.push({ id: d.id, spotId: spotId, ...d.data() });
-                });
                 
-                let html = '';
-                cmts.forEach(c => {
-                    const spotName = spotsCache[c.spotId] || "不明/削除されたスポット";
-                    html += `
-                        <div class="item-row">
-                            <div class="item-meta">
-                                スポット: <strong>${escapeHTML(spotName)}</strong> | 
-                                投稿者: ${escapeHTML(c.name) || '名無しさん'} | 
-                                日時: ${formatDate(c.created_at)}
-                            </div>
-                            <div class="item-content">${escapeHTML(c.text)}</div>
-                            <div>
-                                <button class="btn btn-danger" onclick="deleteComment('${c.spotId}', '${c.id}')">このコメントを削除</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                list.innerHTML = html || '<p>コメントはまだありません。</p>';
-            } catch (e) { 
-                list.innerHTML = `<p style="color:red;">エラー: ${e.message}<br>※コメントの読み込みに失敗しました。Firebase Consoleで複合インデックス（comments, created_at:降順）が作成されているか確認してください。</p>`; 
+                if (snap.empty) {
+                    listContainer.innerHTML = '<p>現在、未解決の報告はありません。</p>';
+                    return;
+                }
+                
+                const tmpl = document.getElementById('tmpl-report');
+                
+                // 非同期ループを処理するため、for...of を使用
+                for (const documentSnapshot of snap.docs) {
+                    const docId = documentSnapshot.id;
+                    const data = documentSnapshot.data();
+                    const clone = tmpl.content.cloneNode(true);
+                    
+                    const spotName = await getSpotName(data.spotId);
+                    
+                    clone.querySelector('.report-category').textContent = data.category || '報告';
+                    clone.querySelector('.report-spot-name').textContent = spotName;
+                    clone.querySelector('.report-spot-id').textContent = `(ID: ${data.spotId})`;
+                    clone.querySelector('.report-date').textContent = formatDate(data.created_at);
+                    clone.querySelector('.report-text').textContent = data.text;
+                    
+                    clone.querySelector('.btn-resolve').addEventListener('click', () => handleResolveReport(docId));
+                    clone.querySelector('.btn-delete-report').addEventListener('click', () => handleDeleteReport(docId));
+                    
+                    listContainer.appendChild(clone);
+                }
+            } catch (e) {
+                listContainer.innerHTML = `<p style="color:red;">読み込みエラー: ${e.message}</p>`;
             }
         }
 
-        // --- 各種アクション（グローバル関数として定義） ---
-
-        window.approveSpot = async function(id) {
-            if(!confirm("承認して一般公開しますか？")) return;
-            await updateDoc(doc(db, "spots", id), { approved: true });
-            alert("承認しました"); loadAllAdminData();
-        };
-
-        // ★修正: スポット削除時に紐づく画像とコメント（サブコレクション）もカスケード削除する
-        window.deleteSpot = async function(id) {
-            if(!confirm("本当に削除しますか？\n紐づく画像やコメントも完全に削除されます。")) return;
+        // ===== 3. 最新のコメント =====
+        async function renderComments() {
+            const listContainer = document.getElementById('comments-list');
+            listContainer.innerHTML = '';
             
             try {
-                const spotRef = doc(db, "spots", id);
-                const spotSnap = await getDocs(query(collection(db, "spots"), where("__name__", "==", id))); 
+                // コスト爆発を防ぐため limit(30) を適用
+                const q = query(collectionGroup(db, "comments"), orderBy("created_at", "desc"), limit(30));
+                const snap = await getDocs(q);
                 
-                // 1. Storageの画像を削除
-                if (!spotSnap.empty && spotSnap.docs[0].data().imageUrl) {
-                    const imgUrl = spotSnap.docs[0].data().imageUrl;
+                if (snap.empty) {
+                    listContainer.innerHTML = '<p>コメントはまだありません。</p>';
+                    return;
+                }
+                
+                const tmpl = document.getElementById('tmpl-comment');
+                
+                for (const documentSnapshot of snap.docs) {
+                    const commentId = documentSnapshot.id;
+                    const data = documentSnapshot.data();
+                    const spotId = documentSnapshot.ref.parent.parent.id; // 親のspotIdを取得
+                    const clone = tmpl.content.cloneNode(true);
+                    
+                    const spotName = await getSpotName(spotId);
+                    
+                    clone.querySelector('.comment-spot-name').textContent = spotName;
+                    clone.querySelector('.comment-author').textContent = data.name || '名無しさん';
+                    clone.querySelector('.comment-date').textContent = formatDate(data.created_at);
+                    clone.querySelector('.comment-text').textContent = data.text;
+                    
+                    clone.querySelector('.btn-delete-comment').addEventListener('click', () => handleDeleteComment(spotId, commentId));
+                    
+                    listContainer.appendChild(clone);
+                }
+            } catch (e) {
+                listContainer.innerHTML = `<p style="color:red;">読み込みエラー: ${e.message}<br>※Firestoreでインデックス(comments, created_at:降順)が作成されているか確認してください。</p>`;
+            }
+        }
+
+        // ===== イベントハンドラー（ロジックの分離） =====
+        
+        async function handleApproveSpot(spotId) {
+            if (!confirm("承認して一般公開しますか？")) return;
+            try {
+                await updateDoc(doc(db, "spots", spotId), { approved: true });
+                alert("承認しました");
+                renderAllData();
+            } catch (e) {
+                alert("承認に失敗しました: " + e.message);
+            }
+        }
+
+        async function handleDeleteSpot(spotId) {
+            if (!confirm("本当に削除しますか？\n紐づく画像やコメントも完全に削除されます。")) return;
+            
+            try {
+                const spotRef = doc(db, "spots", spotId);
+                const spotDoc = await getDoc(spotRef);
+                
+                // カスケード削除: 画像
+                if (spotDoc.exists() && spotDoc.data().imageUrl) {
                     try {
-                        const imgRef = storageRef(storage, imgUrl);
+                        const imgRef = storageRef(storage, spotDoc.data().imageUrl);
                         await deleteObject(imgRef);
                     } catch (e) {
-                        console.warn("画像削除スキップ(既に存在しない可能性があります):", e);
+                        console.warn("画像削除スキップ:", e);
                     }
                 }
 
-                // 2. コメント(サブコレクション)の削除
-                const commentsSnap = await getDocs(collection(db, "spots", id, "comments"));
+                // カスケード削除: コメント
+                const commentsSnap = await getDocs(collection(db, "spots", spotId, "comments"));
                 const deletePromises = commentsSnap.docs.map(d => deleteDoc(d.ref));
                 await Promise.all(deletePromises);
 
-                // 3. スポット本体の削除
+                // 本体削除
                 await deleteDoc(spotRef);
                 
                 alert("完全に削除しました");
-                loadAllAdminData();
-            } catch (err) {
-                console.error("削除エラー:", err);
+                renderAllData();
+            } catch (e) {
+                alert("削除に失敗しました: " + e.message);
+            }
+        }
+
+        async function handleResolveReport(reportId) {
+            if (!confirm("この報告を「解決済み」にしますか？")) return;
+            try {
+                await updateDoc(doc(db, "reports", reportId), { resolved: true });
+                renderReports();
+            } catch (e) {
+                alert("更新に失敗しました");
+            }
+        }
+
+        async function handleDeleteReport(reportId) {
+            if (!confirm("この報告を完全に削除しますか？")) return;
+            try {
+                await deleteDoc(doc(db, "reports", reportId));
+                renderReports();
+            } catch (e) {
                 alert("削除に失敗しました");
             }
-        };
+        }
 
-        // 報告関連
-        window.resolveReport = async function(id) {
-            if(!confirm("この報告を「解決済み」にしますか？\n(リストから非表示になります)")) return;
-            await updateDoc(doc(db, "reports", id), { resolved: true });
-            loadReports(); 
-        };
-        window.deleteReport = async function(id) {
-            if(!confirm("この報告を完全に削除しますか？")) return;
-            await deleteDoc(doc(db, "reports", id));
-            loadReports();
-        };
-
-        // コメント関連
-        window.deleteComment = async function(spotId, commentId) {
-            if(!confirm("不適切なコメントとして削除しますか？\nこの操作は元に戻せません。")) return;
-            await deleteDoc(doc(db, "spots", spotId, "comments", commentId));
-            alert("コメントを削除しました"); loadComments();
-        };
+        async function handleDeleteComment(spotId, commentId) {
+            if (!confirm("不適切なコメントとして削除しますか？")) return;
+            try {
+                await deleteDoc(doc(db, "spots", spotId, "comments", commentId));
+                alert("コメントを削除しました");
+                renderComments();
+            } catch (e) {
+                alert("削除に失敗しました");
+            }
+        }
     </script>
 </body>
 </html>
