@@ -9,49 +9,66 @@
         :root {
             --primary: #007AFF; --bg-base: #F2F4F7; --surface: #FFFFFF;
             --text-main: #1C1C1E; --text-sub: #8E8E93; --danger: #FF3B30;
-            --border: #E5E5EA;
+            --success: #34C759; --border: #E5E5EA;
         }
         body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         h1, h2, h3 { color: var(--primary); margin-top: 0; }
-        .btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        h2 { border-bottom: 2px solid var(--primary-light); padding-bottom: 8px; margin-bottom: 16px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem;}
         .btn-danger { background: white; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-success { background: white; color: var(--success); border: 1px solid var(--success); }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .spot-item { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
-        .spot-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .spot-img { max-width: 200px; border-radius: 8px; margin-top: 8px; }
+        .item-row { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
+        .item-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .item-meta { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 4px; }
+        .item-content { font-size: 1rem; margin-bottom: 12px; white-space: pre-wrap; background: var(--bg-base); padding: 12px; border-radius: 8px;}
+        .spot-img { max-width: 200px; border-radius: 8px; margin-top: 8px; display: block;}
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: var(--border); margin-right: 8px; }
+        .badge-warning { background: #FFF500; color: #333; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="flex-between">
+        <div class="flex-between" style="margin-bottom: 20px;">
             <h1>管理者ダッシュボード</h1>
             <button id="logout-btn" class="btn btn-danger" style="display: none;">ログアウト</button>
         </div>
 
         <div id="auth-section" class="card" style="text-align: center;">
             <p>管理操作を行うには、許可されたGoogleアカウントでログインしてください。</p>
-            <button id="login-btn" class="btn">Googleでログイン</button>
+            <button id="login-btn" class="btn" style="padding: 12px 24px; font-size: 1rem;">Googleでログイン</button>
             <p id="auth-error" style="color: var(--danger); display: none; margin-top: 10px;"></p>
         </div>
 
         <div id="admin-dashboard" style="display: none;">
-            <p style="color: var(--text-sub);">ログイン中: <strong id="admin-email-disp"></strong></p>
+            <p style="color: var(--text-sub); margin-bottom: 24px;">ログイン中: <strong id="admin-email-disp"></strong></p>
             
             <div class="card">
-                <h2>承認待ちのスポット</h2>
+                <h2>1. 承認待ちのスポット</h2>
                 <div id="unapproved-list">読み込み中...</div>
+            </div>
+
+            <div class="card">
+                <h2>2. 問題の報告 (未解決)</h2>
+                <div id="reports-list">読み込み中...</div>
+            </div>
+
+            <div class="card">
+                <h2>3. 最新のコメント管理</h2>
+                <div id="comments-list">読み込み中...</div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, collectionGroup } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+        // Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg", authDomain: "sciencetokyowater.firebaseapp.com",
             projectId: "sciencetokyowater", storageBucket: "sciencetokyowater.firebasestorage.app",
@@ -62,8 +79,15 @@
         const auth = getAuth(app);
         const googleProvider = new GoogleAuthProvider();
 
-        // ★ 管理用メールアドレスを設定
+        // 管理用メールアドレス
         const ADMIN_EMAILS = ['teduryu@gmail.com'];
+
+        // XSS対策用
+        function escapeHTML(str) { return typeof str === 'string' ? str.replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m])) : ''; }
+        function formatDate(timestamp) { return timestamp ? new Date(timestamp.toMillis()).toLocaleString('ja-JP') : '日時不明'; }
+
+        // スポットのIDと名前を紐付けるためのキャッシュ
+        let spotsCache = {};
 
         // 認証状態の監視
         onAuthStateChanged(auth, (user) => {
@@ -73,7 +97,7 @@
                     document.getElementById('admin-dashboard').style.display = 'block';
                     document.getElementById('logout-btn').style.display = 'block';
                     document.getElementById('admin-email-disp').innerText = user.email;
-                    loadAdminData();
+                    loadAllAdminData();
                 } else {
                     document.getElementById('auth-error').style.display = 'block';
                     document.getElementById('auth-error').innerText = `エラー: アカウント (${user.email}) には管理者権限がありません。`;
@@ -85,14 +109,25 @@
             }
         });
 
-        // ログイン・ログアウト処理
         document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, googleProvider));
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // データ読み込み処理
-        async function loadAdminData() {
+        // データを一括で読み込む
+        async function loadAllAdminData() {
+            // まず全スポットの名前を取得してキャッシュ（報告やコメントの表示で使うため）
+            try {
+                const snap = await getDocs(collection(db, "spots"));
+                snap.forEach(d => { spotsCache[d.id] = d.data().name; });
+            } catch(e) { console.error("スポット名のキャッシュに失敗", e); }
+
+            loadUnapprovedSpots();
+            loadReports();
+            loadComments();
+        }
+
+        // 1. 承認待ちスポットの読み込み
+        async function loadUnapprovedSpots() {
             const list = document.getElementById('unapproved-list');
-            list.innerHTML = '<p>読み込み中...</p>';
             try {
                 const q = query(collection(db, "spots"), where("approved", "==", false));
                 const snap = await getDocs(q);
@@ -100,34 +135,119 @@
                 snap.forEach(doc => {
                     const s = doc.data();
                     html += `
-                        <div class="spot-item">
-                            <h3>${s.name}</h3>
-                            <p><strong>場所:</strong> ${s.placename} ${s.floor ? `(${s.floor})` : ''}</p>
-                            <p><strong>特徴:</strong> ${(s.features || []).join(', ')}</p>
-                            ${s.imageUrl ? `<img src="${s.imageUrl}" class="spot-img">` : ''}
-                            <div style="margin-top: 10px;">
+                        <div class="item-row">
+                            <h3 style="margin-bottom: 4px;">${escapeHTML(s.name)}</h3>
+                            <div class="item-meta">場所: ${escapeHTML(s.placename)} ${s.floor ? `(${escapeHTML(s.floor)})` : ''} | 申請日時: ${formatDate(s.created_at)}</div>
+                            <div class="item-meta">特徴: ${(s.features || []).join(', ')} | 時間: ${escapeHTML(s.available_hours)}</div>
+                            ${s.imageUrl ? `<a href="${s.imageUrl}" target="_blank"><img src="${s.imageUrl}" class="spot-img"></a>` : ''}
+                            <div style="margin-top: 12px; display: flex; gap: 8px;">
                                 <button class="btn" onclick="approveSpot('${doc.id}')">承認して公開</button>
-                                <button class="btn btn-danger" onclick="deleteSpot('${doc.id}')">削除</button>
+                                <button class="btn btn-danger" onclick="deleteSpot('${doc.id}')">削除 (却下)</button>
                             </div>
                         </div>
                     `;
                 });
                 list.innerHTML = html || '<p>現在、承認待ちのスポットはありません。</p>';
-            } catch (e) {
-                list.innerHTML = `<p style="color:red;">読み込みエラー: ${e.message}</p>`;
-            }
+            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
         }
 
-        // 承認と削除をグローバル関数にする
+        // 2. 未解決の報告の読み込み
+        async function loadReports() {
+            const list = document.getElementById('reports-list');
+            try {
+                const q = query(collection(db, "reports"), where("resolved", "==", false));
+                const snap = await getDocs(q);
+                let html = '';
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    const spotName = spotsCache[r.spotId] || "不明/削除されたスポット";
+                    html += `
+                        <div class="item-row">
+                            <div class="item-meta">
+                                <span class="badge badge-warning">${escapeHTML(r.category)}</span>
+                                対象: <strong>${escapeHTML(spotName)}</strong> (ID: ${r.spotId}) | 報告日時: ${formatDate(r.created_at)}
+                            </div>
+                            <div class="item-content">${escapeHTML(r.text)}</div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-success" onclick="resolveReport('${doc.id}')">解決済みにする</button>
+                                <button class="btn btn-danger" onclick="deleteReport('${doc.id}')">この報告を削除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || '<p>現在、未解決の報告はありません。</p>';
+            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
+        }
+
+        // 3. 最新コメントの読み込み (collectionGroupを使用)
+        async function loadComments() {
+            const list = document.getElementById('comments-list');
+            try {
+                const q = query(collectionGroup(db, "comments"));
+                const snap = await getDocs(q);
+                let cmts = [];
+                snap.forEach(d => {
+                    // 親ドキュメントのID(スポットID)を取得
+                    const spotId = d.ref.parent.parent.id;
+                    cmts.push({ id: d.id, spotId: spotId, ...d.data() });
+                });
+                
+                // JavaScript側で新しい順に並び替え（インデックス作成エラーを回避するため）
+                cmts.sort((a, b) => (b.created_at?.toMillis() || 0) - (a.created_at?.toMillis() || 0));
+                
+                let html = '';
+                // 最新の30件だけ表示
+                cmts.slice(0, 30).forEach(c => {
+                    const spotName = spotsCache[c.spotId] || "不明/削除されたスポット";
+                    html += `
+                        <div class="item-row">
+                            <div class="item-meta">
+                                スポット: <strong>${escapeHTML(spotName)}</strong> | 
+                                投稿者: ${escapeHTML(c.name) || '名無しさん'} | 
+                                日時: ${formatDate(c.created_at)}
+                            </div>
+                            <div class="item-content">${escapeHTML(c.text)}</div>
+                            <div>
+                                <button class="btn btn-danger" onclick="deleteComment('${c.spotId}', '${c.id}')">このコメントを削除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || '<p>コメントはまだありません。</p>';
+            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
+        }
+
+        // --- 各種アクション（グローバル関数として定義） ---
+
+        // スポット関連
         window.approveSpot = async function(id) {
             if(!confirm("承認して一般公開しますか？")) return;
             await updateDoc(doc(db, "spots", id), { approved: true });
-            alert("承認しました"); loadAdminData();
+            alert("承認しました"); loadAllAdminData();
         };
         window.deleteSpot = async function(id) {
-            if(!confirm("本当に削除しますか？")) return;
+            if(!confirm("本当に削除しますか？\n(悪質な申請などの場合にのみ使用してください)")) return;
             await deleteDoc(doc(db, "spots", id));
-            alert("削除しました"); loadAdminData();
+            alert("削除しました"); loadAllAdminData();
+        };
+
+        // 報告関連
+        window.resolveReport = async function(id) {
+            if(!confirm("この報告を「解決済み」にしますか？\n(リストから非表示になります)")) return;
+            await updateDoc(doc(db, "reports", id), { resolved: true });
+            loadReports(); // 報告リストだけ更新
+        };
+        window.deleteReport = async function(id) {
+            if(!confirm("この報告を完全に削除しますか？")) return;
+            await deleteDoc(doc(db, "reports", id));
+            loadReports();
+        };
+
+        // コメント関連
+        window.deleteComment = async function(spotId, commentId) {
+            if(!confirm("不適切なコメントとして削除しますか？\nこの操作は元に戻せません。")) return;
+            await deleteDoc(doc(db, "spots", spotId, "comments", commentId));
+            alert("コメントを削除しました"); loadComments();
         };
     </script>
 </body>
