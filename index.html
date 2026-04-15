@@ -348,9 +348,29 @@
         document.getElementById('gps-btn').addEventListener('click', (e) => fetchCurrentLocation(e.currentTarget, 'gps-btn-text', '現在地周辺を検索', (success) => { if(success) { map.flyTo(userLocation, 16); updateLists(); }}));
         document.getElementById('btn-get-location').addEventListener('click', (e) => fetchCurrentLocation(e.currentTarget, 'add-gps-text', '現在地を取得', (success) => { if(success) addMap.flyTo(userLocation, 18) }));
         
-        let is24hMode = false; const btn24h = document.getElementById('btn-24h'); const inputHours = document.getElementById('add-hours');
-        btn24h.addEventListener('click', () => { is24hMode = !is24hMode; if (is24hMode) { btn24h.classList.add('active'); inputHours.disabled = true; inputHours.value = ''; inputHours.placeholder = "24時間営業"; inputHours.removeAttribute('required'); } else { btn24h.classList.remove('active'); inputHours.disabled = false; inputHours.placeholder = "例: 09:00 - 18:00"; inputHours.setAttribute('required', 'true'); } });
+        let is24hMode = false; 
+const btn24h = document.getElementById('btn-24h'); 
+const inputHoursStart = document.getElementById('add-hours-start');
+const inputHoursEnd = document.getElementById('add-hours-end');
 
+btn24h.addEventListener('click', () => { 
+    is24hMode = !is24hMode; 
+    if (is24hMode) { 
+        btn24h.classList.add('active'); 
+        inputHoursStart.disabled = true; 
+        inputHoursEnd.disabled = true; 
+        inputHoursStart.value = ''; 
+        inputHoursEnd.value = ''; 
+        inputHoursStart.removeAttribute('required'); 
+        inputHoursEnd.removeAttribute('required'); 
+    } else { 
+        btn24h.classList.remove('active'); 
+        inputHoursStart.disabled = false; 
+        inputHoursEnd.disabled = false; 
+        inputHoursStart.setAttribute('required', 'true'); 
+        inputHoursEnd.setAttribute('required', 'true'); 
+    } 
+});
         window.flyToSpot = function(id) { const spot = allSpots.find(s => s.id === id); if (!spot) return; document.querySelector('[data-target="view-map"]').click(); map.flyTo([spot.latitude, spot.longitude], 18, { animate: true }); setTimeout(() => { if (spot.marker) spot.marker.openPopup(); }, 800); }
 
         window.showDetail = function(id) {
