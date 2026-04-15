@@ -139,7 +139,6 @@
         .modal-content { background: white; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .modal-content h3 { margin-top:0; color: var(--text-main); font-size:1.2rem; margin-bottom: 8px;}
 
-        /* タブを3つに戻す */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)) 0; box-shadow: 0 -1px 0 var(--border); z-index: 2000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-sub); width: 33.33%; cursor: pointer; transition: color 0.2s ease; font-weight: 600; padding: 4px 0;}
         .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; transition: transform 0.2s ease; }
@@ -274,7 +273,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        // Auth関連とdeleteDocを削除し、必要なものだけを残しました
         import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
@@ -291,20 +289,31 @@
         function escapeHTML(str) { return typeof str === 'string' ? str.replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m])) : ''; }
         function getDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180; const dp = (lat2-lat1) * Math.PI/180; const dl = (lon2-lon1) * Math.PI/180; const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
         function formatDistance(meters) { return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`; }
-        function isOpen(spot) { 
-    const hs = spot.available_hours || "24時間営業"; 
-    const cd = new Date().getDay(); 
-    if ((spot.closed_days || []).includes(cd)) return false; 
-    if (hs.includes("24時間") || hs === "不明") return true; 
-    try { 
-        const ct = new Date().getHours() * 60 + new Date().getMinutes(); 
-        const p = hs.replace(/[～~]/g, '-').split('-'); 
-        if (p.length < 2) return true; // パースできない形式は一旦営業中扱いにする
-        const s = p[0].trim().split(':').map(Number); 
-        const e = p[1].trim().split(':').map(Number); 
-        return ct >= (s[0]*60+s[1]) && ct <= (e[0]*60+e[1]); 
-    } catch { return true; } 
-}
+        
+        // 深夜（日またぎ）営業判定の修正
+        function isOpen(spot) {
+            const hs = spot.available_hours || "24時間営業";
+            const cd = new Date().getDay();
+            if ((spot.closed_days || []).includes(cd)) return false;
+            if (hs.includes("24時間") || hs === "不明") return true;
+            try {
+                const ct = new Date().getHours() * 60 + new Date().getMinutes();
+                const p = hs.replace(/[～~]/g, '-').split('-');
+                if (p.length < 2) return true;
+                const s = p[0].trim().split(':').map(Number);
+                const e = p[1].trim().split(':').map(Number);
+                const startMins = s[0] * 60 + s[1];
+                const endMins = e[0] * 60 + e[1];
+                
+                if (startMins <= endMins) {
+                    return ct >= startMins && ct <= endMins;
+                } else {
+                    // 日またぎの営業時間 (例: 22:00 - 02:00)
+                    return ct >= startMins || ct <= endMins;
+                }
+            } catch { return true; }
+        }
+
         function getClosedDaysText(c) { return (!c || c.length===0) ? "" : `<span class="text-danger" style="margin-left:8px;">休: ${c.map(d => ["日","月","火","水","木","金","土","祝"][d]).join(',')}</span>`; }
         function getPinColor(f) { if (!f) return "var(--pin-default)"; if (f.includes("お湯")) return "var(--pin-hot)"; if (f.includes("給水機")) return "var(--pin-machine)"; if (f.includes("蛇口")) return "var(--pin-tap)"; return "var(--pin-default)"; }
         function createCustomIcon(c) { return L.divIcon({ className: 'custom-pin', html: `<svg viewBox="0 0 24 24" fill="${c}" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="4" fill="white"></circle></svg>`, iconSize: [36,36], iconAnchor: [18,36], popupAnchor: [0,-34] }); }
@@ -406,26 +415,50 @@
         document.getElementById("sort-select").addEventListener('change', (e) => { if (e.target.value === "distance" && !userLocation) { if (confirm("現在地に近い順に並び替えるには、位置情報を取得しますか？")) { const btn = document.getElementById('gps-btn'); fetchCurrentLocation(btn, 'gps-btn-text', '現在地周辺を検索', (success) => { if(success) { document.getElementById("sort-select").value = "distance"; updateLists(); } else { e.target.value = "default"; }}); } else { e.target.value = "default"; } } else { updateLists(); } });
         document.getElementById("filter-open").addEventListener('click', (e) => { filterOpenOnly = !filterOpenOnly; e.currentTarget.classList.toggle('active'); updateLists(); });
 
+        // 画像アップロードのスコープエラーの修正
         document.getElementById('add-spot-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); const btn = document.getElementById('submit-btn'); btn.disabled = true; btn.innerText = "送信中...";
+            e.preventDefault(); 
+            const btn = document.getElementById('submit-btn'); 
+            btn.disabled = true; 
+            btn.innerText = "送信中...";
+            
             try {
-                const name = document.getElementById('add-name').value; const placename = document.getElementById('add-placename').value; const floor = document.getElementById('add-floor').value; 
+                const name = document.getElementById('add-name').value; 
+                const placename = document.getElementById('add-placename').value; 
+                const floor = document.getElementById('add-floor').value; 
                 const hours = is24hMode ? "24時間営業" : document.getElementById('add-hours').value;
                 const features = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
                 const closed_days = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
-                let imageUrl = null; const fileInput = document.getElementById('add-image');
-                if (fileInput.files.length > 0) { const compressedBlob = await compressImage(fileInput.files[0], 1024, 0.8); if (fileInput.files.length > 0) { 
-    const compressedBlob = await compressImage(fileInput.files[0], 1024, 0.8); 
-    const randomStr = Math.random().toString(36).substring(2, 8); // 6桁のランダムな英数字
-    const storageRef = ref(storage, 'spots/' + Date.now() + '_' + randomStr + '.jpg'); 
-    await uploadBytes(storageRef, compressedBlob); 
-    imageUrl = await getDownloadURL(storageRef); 
-} await uploadBytes(storageRef, compressedBlob); imageUrl = await getDownloadURL(storageRef); }
+                
+                let imageUrl = null; 
+                const fileInput = document.getElementById('add-image');
+                
+                if (fileInput.files.length > 0) { 
+                    try {
+                        const compressedBlob = await compressImage(fileInput.files[0], 1024, 0.8);
+                        const randomStr = Math.random().toString(36).substring(2, 8); // 6桁のランダムな英数字
+                        const storageRef = ref(storage, 'spots/' + Date.now() + '_' + randomStr + '.jpg'); 
+                        await uploadBytes(storageRef, compressedBlob); 
+                        imageUrl = await getDownloadURL(storageRef); 
+                    } catch (err) {
+                        console.error("画像アップロードエラー:", err);
+                        alert("画像のアップロードに失敗しました。画像なしで登録します。");
+                    }
+                }
                 
                 // approved: false で申請として保存
                 await addDoc(collection(db, "spots"), { name, placename, floor, available_hours: hours, features, closed_days, latitude: addMap.currentLat, longitude: addMap.currentLng, imageUrl, approved: false, created_at: serverTimestamp() });
-                alert("申請が完了しました。管理者の承認後にマップに反映されます。"); e.target.reset(); if(is24hMode) btn24h.click(); document.querySelector('[data-target="view-map"]').click();
-            } catch (err) { alert("送信中にエラーが発生しました。"); console.error(err); } finally { btn.disabled = false; btn.innerText = "この内容で申請する"; }
+                alert("申請が完了しました。管理者の承認後にマップに反映されます。"); 
+                e.target.reset(); 
+                if(is24hMode) btn24h.click(); 
+                document.querySelector('[data-target="view-map"]').click();
+            } catch (err) { 
+                alert("送信中にエラーが発生しました。"); 
+                console.error(err); 
+            } finally { 
+                btn.disabled = false; 
+                btn.innerText = "この内容で申請する"; 
+            }
         });
 
         window.openReportModal = function() { document.getElementById('report-modal').style.display = 'flex'; }
