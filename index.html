@@ -15,7 +15,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
     <style>
-        /* --- 既存のCSS（省略せずにそのまま残します） --- */
         :root {
             --primary: #007AFF; --primary-hover: #005bb5; --primary-light: #E5F1FF;
             --bg-base: #F2F4F7; --surface: #FFFFFF; --text-main: #1C1C1E; --text-sub: #8E8E93;
@@ -140,9 +139,9 @@
         .modal-content { background: white; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .modal-content h3 { margin-top:0; color: var(--text-main); font-size:1.2rem; margin-bottom: 8px;}
 
-        /* ★ タブを4つにするため width を 25% に変更 */
+        /* タブを3つに戻す */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)) 0; box-shadow: 0 -1px 0 var(--border); z-index: 2000; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-sub); width: 25%; cursor: pointer; transition: color 0.2s ease; font-weight: 600; padding: 4px 0;}
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-sub); width: 33.33%; cursor: pointer; transition: color 0.2s ease; font-weight: 600; padding: 4px 0;}
         .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; transition: transform 0.2s ease; }
         .nav-item.active { color: var(--primary); }
         .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
@@ -194,30 +193,6 @@
         </div>
     </div>
 
-    <div class="container view-section" id="view-admin">
-        <h2 class="section-title">管理者ダッシュボード</h2>
-        
-        <div id="auth-section" class="spot-card text-center">
-            <p class="text-sub mb-md">管理操作を行うには許可されたGoogleアカウントでのログインが必要です。</p>
-            <button id="login-btn" class="btn-large btn-secondary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                Googleでログイン
-            </button>
-            <div id="auth-error" class="text-danger mt-sm" style="display:none; font-size:0.85rem;"></div>
-        </div>
-
-        <div id="admin-dashboard" style="display:none;">
-            <div class="flex-between mb-md">
-                <span class="text-sub">ログイン中: <strong id="admin-email-disp"></strong></span>
-                <button id="logout-btn" style="background:none; border:none; color:var(--danger); font-weight:bold; cursor:pointer;">ログアウト</button>
-            </div>
-            
-            <div class="divider"></div>
-            <h3 class="section-title">未承認スポット (申請待ち)</h3>
-            <div id="unapproved-list"><p class="text-sub">読み込み中...</p></div>
-        </div>
-    </div>
-
     <div id="view-detail" class="view-section">
         <div class="container">
             <button class="detail-back-btn" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> 戻る</button>
@@ -264,15 +239,11 @@
         <div class="nav-item" data-target="view-add">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg><span>追加</span>
         </div>
-        <div class="nav-item" data-target="view-admin">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span>管理</span>
-        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
     <script>
-        // --- 既存のLeafletマップスクリプト（変更なし） ---
         const MAP_TILE_URL = 'https://tile.tracestrack.com/ja/{z}/{x}/{y}.png?key=27e171dc5ca2cc214ecf5ab9d0f493bd';
         const MAP_ATTRIBUTION = '&copy; OpenStreetMap contributors';
         
@@ -303,11 +274,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        // ★ deleteDoc を追加
-        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, doc, updateDoc, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        // Auth関連とdeleteDocを削除し、必要なものだけを残しました
+        import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-        // ★ Auth 用のモジュールを追加
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg", authDomain: "sciencetokyowater.firebaseapp.com",
@@ -316,17 +285,9 @@
         };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const storage = getStorage(app);
         
-        // ★ Authの初期化
-        const auth = getAuth(app);
-        const googleProvider = new GoogleAuthProvider();
-
-        // 🚨【重要】ここで指定したメールアドレスのユーザーのみ管理画面が使えます🚨
-        const ADMIN_EMAILS = ['teduryu@gmail.com']; 
-
         let allSpots = []; let userLocation = null; let userMarker = null;
         let filterOpenOnly = false; let previousView = 'view-map'; window.currentDetailSpotId = null;
 
-        // --- 既存のヘルパー関数群（省略） ---
         function escapeHTML(str) { return typeof str === 'string' ? str.replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m])) : ''; }
         function getDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180; const dp = (lat2-lat1) * Math.PI/180; const dl = (lon2-lon1) * Math.PI/180; const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
         function formatDistance(meters) { return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`; }
@@ -352,93 +313,6 @@
             });
         }
 
-        // ★ 管理者の認証状態の監視
-        onAuthStateChanged(auth, (user) => {
-            const authSection = document.getElementById('auth-section');
-            const adminDashboard = document.getElementById('admin-dashboard');
-            const authError = document.getElementById('auth-error');
-
-            if (user) {
-                if (ADMIN_EMAILS.includes(user.email)) {
-                    // 正当な管理者
-                    authSection.style.display = 'none';
-                    adminDashboard.style.display = 'block';
-                    document.getElementById('admin-email-disp').innerText = user.email;
-                    loadAdminData(); // 未承認データの読み込み
-                } else {
-                    // ログインしたけど管理者ではない
-                    authSection.style.display = 'block';
-                    adminDashboard.style.display = 'none';
-                    authError.style.display = 'block';
-                    authError.innerHTML = `アカウント (${user.email}) には管理者権限がありません。<br><button onclick="window.logoutAdmin()" class="btn-secondary" style="padding:6px; margin-top:8px;">別のアカウントでログイン</button>`;
-                }
-            } else {
-                // 未ログイン
-                authSection.style.display = 'block';
-                adminDashboard.style.display = 'none';
-                authError.style.display = 'none';
-            }
-        });
-
-        document.getElementById('login-btn').addEventListener('click', () => {
-            signInWithPopup(auth, googleProvider).catch((error) => {
-                console.error("ログインエラー", error);
-                alert("ログインに失敗しました。");
-            });
-        });
-        
-        window.logoutAdmin = () => signOut(auth);
-        document.getElementById('logout-btn').addEventListener('click', window.logoutAdmin);
-
-        // ★ 管理ダッシュボードのデータ読み込み
-        async function loadAdminData() {
-            const unapprovedList = document.getElementById('unapproved-list');
-            unapprovedList.innerHTML = '<p class="text-sub">読み込み中...</p>';
-            
-            try {
-                const q = query(collection(db, "spots"), where("approved", "==", false));
-                const snap = await getDocs(q);
-                let html = '';
-                snap.forEach(doc => {
-                    const s = doc.data();
-                    html += `<div class="spot-card">
-                        <div class="spot-title">${escapeHTML(s.name)}</div>
-                        <div class="spot-meta mb-sm">場所: ${escapeHTML(s.placename)} ${s.floor ? `(${escapeHTML(s.floor)})`:""}</div>
-                        ${s.imageUrl ? `<img src="${s.imageUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:8px;">` : ''}
-                        <div class="flex-between gap-md mt-sm">
-                            <button onclick="approveSpot('${doc.id}')" class="btn-large" style="padding:10px;">承認する</button>
-                            <button onclick="deleteSpot('${doc.id}')" class="btn-large btn-danger-outline" style="padding:10px;">削除</button>
-                        </div>
-                    </div>`;
-                });
-                unapprovedList.innerHTML = html || '<p class="text-sub">現在、承認待ちのスポットはありません。</p>';
-            } catch (error) {
-                console.error("Admin Load Error", error);
-                unapprovedList.innerHTML = '<p class="text-danger">読み込みエラー。権限がない可能性があります。</p>';
-            }
-        }
-
-        // ★ 管理機能：承認と削除
-        window.approveSpot = async function(id) {
-            if(!confirm("このスポットを承認して公開しますか？")) return;
-            try {
-                await updateDoc(doc(db, "spots", id), { approved: true });
-                alert("承認しました。");
-                loadAdminData(); loadSpots(); // 一般側のマップも更新
-            } catch (e) { alert("エラーが発生しました"); console.error(e); }
-        }
-        
-        window.deleteSpot = async function(id) {
-            if(!confirm("本当にこの申請を削除しますか？（元に戻せません）")) return;
-            try {
-                await deleteDoc(doc(db, "spots", id));
-                alert("削除しました。");
-                loadAdminData();
-            } catch (e) { alert("エラーが発生しました"); console.error(e); }
-        }
-
-
-        // --- 既存のマップやUI機能 ---
         function fetchCurrentLocation(btnEl, textElId, defaultText, callback) {
             if (!navigator.geolocation) return alert("お使いの端末は位置情報に対応していません。");
             const textEl = document.getElementById(textElId);
@@ -529,6 +403,7 @@
                 let imageUrl = null; const fileInput = document.getElementById('add-image');
                 if (fileInput.files.length > 0) { const compressedBlob = await compressImage(fileInput.files[0], 1024, 0.8); const storageRef = ref(storage, 'spots/' + Date.now() + '_compressed.jpg'); await uploadBytes(storageRef, compressedBlob); imageUrl = await getDownloadURL(storageRef); }
                 
+                // approved: false で申請として保存
                 await addDoc(collection(db, "spots"), { name, placename, floor, available_hours: hours, features, closed_days, latitude: addMap.currentLat, longitude: addMap.currentLng, imageUrl, approved: false, created_at: serverTimestamp() });
                 alert("申請が完了しました。管理者の承認後にマップに反映されます。"); e.target.reset(); if(is24hMode) btn24h.click(); document.querySelector('[data-target="view-map"]').click();
             } catch (err) { alert("送信中にエラーが発生しました。"); console.error(err); } finally { btn.disabled = false; btn.innerText = "この内容で申請する"; }
