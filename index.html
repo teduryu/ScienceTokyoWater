@@ -442,12 +442,14 @@ btn24h.addEventListener('click', () => {
             btn.innerText = "送信中...";
             
             try {
-                const name = document.getElementById('add-name').value; 
-                const placename = document.getElementById('add-placename').value; 
-                const floor = document.getElementById('add-floor').value; 
-                const hours = is24hMode ? "24時間営業" : document.getElementById('add-hours').value;
-                const features = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
-                const closed_days = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
+               const name = document.getElementById('add-name').value; 
+               const placename = document.getElementById('add-placename').value; 
+               const floor = document.getElementById('add-floor').value; 
+               const startVal = document.getElementById('add-hours-start').value;
+               const endVal = document.getElementById('add-hours-end').value;
+               const hours = is24hMode ? "24時間営業" : `${startVal} - ${endVal}`;
+               const features = Array.from(document.querySelectorAll('input[name="features"]:checked')).map(cb => cb.value);
+               const closed_days = Array.from(document.querySelectorAll('input[name="closed_days"]:checked')).map(cb => parseInt(cb.value));
                 
                 let imageUrl = null; 
                 const fileInput = document.getElementById('add-image');
