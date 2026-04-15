@@ -4,47 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理者ダッシュボード - ScienceTokyoWater</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #007AFF; --bg-base: #F2F4F7; --surface: #FFFFFF; --text-main: #1C1C1E; --text-sub: #8E8E93; --danger: #FF3B30; --success: #34C759; --border: #E5E5EA; }
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 800px; }
-        .card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        h1, h2 { color: var(--primary); margin-top: 0; display: flex; align-items: center; }
-        .btn { padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; background: var(--primary); }
-        .btn-success { background: var(--success); } .btn-danger { background: var(--danger); }
-        .flex { display: flex; gap: 10px; margin-top: 10px; }
-        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-base); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        #auth-overlay input { padding: 12px; font-size: 1rem; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; width: 250px; }
+        :root {
+            --primary: #007AFF; --bg-base: #F2F4F7; --surface: #FFFFFF;
+            --text-main: #1C1C1E; --text-sub: #8E8E93; --danger: #FF3B30;
+            --border: #E5E5EA;
+        }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        h1, h2, h3 { color: var(--primary); margin-top: 0; }
+        .btn { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-danger { background: white; color: var(--danger); border: 1px solid var(--danger); }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .spot-item { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
+        .spot-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .spot-img { max-width: 200px; border-radius: 8px; margin-top: 8px; }
     </style>
 </head>
 <body>
 
-    <div id="auth-overlay">
-        <h2>管理者ログイン</h2>
-        <p class="text-sub">パスワードを入力してください (初期: admin123)</p>
-        <input type="password" id="admin-pass" placeholder="Password">
-        <button class="btn" onclick="checkPass()">ログイン</button>
-    </div>
-
     <div class="container">
-        <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> 管理者ダッシュボード</h1>
-        <p class="text-sub">未承認スポットの審査と、ユーザーからの報告への対応を行います。</p>
-
-        <div class="card">
-            <h2>承認待ちのスポット</h2>
-            <div id="admin-unapproved-list">読み込み中...</div>
+        <div class="flex-between">
+            <h1>管理者ダッシュボード</h1>
+            <button id="logout-btn" class="btn btn-danger" style="display: none;">ログアウト</button>
         </div>
 
-        <div class="card" style="border-top: 4px solid var(--danger);">
-            <h2 style="color: var(--danger);">ユーザーからの問題報告</h2>
-            <div id="admin-reports-list">読み込み中...</div>
+        <div id="auth-section" class="card" style="text-align: center;">
+            <p>管理操作を行うには、許可されたGoogleアカウントでログインしてください。</p>
+            <button id="login-btn" class="btn">Googleでログイン</button>
+            <p id="auth-error" style="color: var(--danger); display: none; margin-top: 10px;"></p>
+        </div>
+
+        <div id="admin-dashboard" style="display: none;">
+            <p style="color: var(--text-sub);">ログイン中: <strong id="admin-email-disp"></strong></p>
+            
+            <div class="card">
+                <h2>承認待ちのスポット</h2>
+                <div id="unapproved-list">読み込み中...</div>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg", authDomain: "sciencetokyowater.firebaseapp.com",
@@ -53,80 +59,76 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
 
-        function escapeHTML(str) { return typeof str === 'string' ? str.replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m])) : ''; }
+        // ★ 管理用メールアドレスを設定
+        const ADMIN_EMAILS = ['teduryu@gmail.com'];
 
-        window.checkPass = function() {
-            const pass = document.getElementById('admin-pass').value;
-            if(pass === "admin123") {
-                document.getElementById('auth-overlay').style.display = 'none';
-                loadAdminData();
-            } else { alert("パスワードが違います"); }
-        }
+        // 認証状態の監視
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if (ADMIN_EMAILS.includes(user.email)) {
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'block';
+                    document.getElementById('logout-btn').style.display = 'block';
+                    document.getElementById('admin-email-disp').innerText = user.email;
+                    loadAdminData();
+                } else {
+                    document.getElementById('auth-error').style.display = 'block';
+                    document.getElementById('auth-error').innerText = `エラー: アカウント (${user.email}) には管理者権限がありません。`;
+                }
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('admin-dashboard').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'none';
+            }
+        });
 
-        window.loadAdminData = async function() {
-            const uDiv = document.getElementById('admin-unapproved-list');
-            const rDiv = document.getElementById('admin-reports-list');
-            
+        // ログイン・ログアウト処理
+        document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, googleProvider));
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+        // データ読み込み処理
+        async function loadAdminData() {
+            const list = document.getElementById('unapproved-list');
+            list.innerHTML = '<p>読み込み中...</p>';
             try {
-                const snap = await getDocs(collection(db, "spots"));
-                let unapp = []; let allSpotsMap = {};
-                snap.forEach(d => { 
-                    const dt = d.data(); 
-                    allSpotsMap[d.id] = dt;
-                    if(dt.approved === false) unapp.push({id: d.id, ...dt}); 
+                const q = query(collection(db, "spots"), where("approved", "==", false));
+                const snap = await getDocs(q);
+                let html = '';
+                snap.forEach(doc => {
+                    const s = doc.data();
+                    html += `
+                        <div class="spot-item">
+                            <h3>${s.name}</h3>
+                            <p><strong>場所:</strong> ${s.placename} ${s.floor ? `(${s.floor})` : ''}</p>
+                            <p><strong>特徴:</strong> ${(s.features || []).join(', ')}</p>
+                            ${s.imageUrl ? `<img src="${s.imageUrl}" class="spot-img">` : ''}
+                            <div style="margin-top: 10px;">
+                                <button class="btn" onclick="approveSpot('${doc.id}')">承認して公開</button>
+                                <button class="btn btn-danger" onclick="deleteSpot('${doc.id}')">削除</button>
+                            </div>
+                        </div>
+                    `;
                 });
-                
-                uDiv.innerHTML = unapp.length ? unapp.map(s => `
-                    <div style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px;">
-                        <strong>${escapeHTML(s.name)}</strong> (${escapeHTML(s.placename)})<br>
-                        <small style="color:var(--text-sub)">設備: ${(s.features||[]).join(', ')} | 申請日時: ${s.created_at ? new Date(s.created_at.toMillis()).toLocaleString() : '不明'}</small>
-                        ${s.imageUrl ? `<br><img src="${s.imageUrl}" style="max-width:200px; margin-top:8px; border-radius:8px;">` : ''}
-                        <div class="flex">
-                            <button class="btn btn-success" onclick="approveSpot('${s.id}')">承認して公開</button>
-                            <button class="btn btn-danger" onclick="deleteSpot('${s.id}')">却下 (削除)</button>
-                        </div>
-                    </div>
-                `).join('') : "<p style='color:var(--text-sub);'>承認待ちのスポットはありません。</p>";
-                
-                const rSnap = await getDocs(collection(db, "reports"));
-                let reps = [];
-                rSnap.forEach(d => { const dt = d.data(); if(!dt.resolved) reps.push({id: d.id, ...dt}); });
-                
-                rDiv.innerHTML = reps.length ? reps.map(r => {
-                    const targetSpot = allSpotsMap[r.spotId] ? allSpotsMap[r.spotId].name : "不明なスポット";
-                    return `
-                    <div style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px;">
-                        <strong>対象スポット: ${escapeHTML(targetSpot)}</strong> (ID: ${r.spotId})<br>
-                        <span style="color:var(--danger); font-weight:bold;">種別: ${escapeHTML(r.category)}</span><br>
-                        <p style="background:var(--bg-base); padding:10px; border-radius:8px; margin: 8px 0;">${escapeHTML(r.text)}</p>
-                        <div class="flex">
-                            <button class="btn" onclick="resolveReport('${r.id}')">対応済みにする</button>
-                            <button class="btn btn-danger" onclick="deleteSpot('${r.spotId}')">対象スポットを削除</button>
-                        </div>
-                    </div>
-                `}).join('') : "<p style='color:var(--text-sub);'>未対応の報告はありません。</p>";
-
-            } catch(e) {
-                console.error(e);
-                alert("データの読み込みに失敗しました。Firestoreの設定やルールを確認してください。");
+                list.innerHTML = html || '<p>現在、承認待ちのスポットはありません。</p>';
+            } catch (e) {
+                list.innerHTML = `<p style="color:red;">読み込みエラー: ${e.message}</p>`;
             }
         }
 
-        window.approveSpot = async function(id) { 
-            if(!confirm("このスポットを承認して公開しますか？")) return; 
-            await updateDoc(doc(db, "spots", id), { approved: true }); 
-            alert("承認しました"); loadAdminData(); 
-        }
-        window.deleteSpot = async function(id) { 
-            if(!confirm("本当にこのスポットを削除しますか？")) return; 
-            await deleteDoc(doc(db, "spots", id)); 
-            alert("削除しました"); loadAdminData(); 
-        }
-        window.resolveReport = async function(id) { 
-            await updateDoc(doc(db, "reports", id), { resolved: true }); 
-            alert("対応済みにしました"); loadAdminData(); 
-        }
+        // 承認と削除をグローバル関数にする
+        window.approveSpot = async function(id) {
+            if(!confirm("承認して一般公開しますか？")) return;
+            await updateDoc(doc(db, "spots", id), { approved: true });
+            alert("承認しました"); loadAdminData();
+        };
+        window.deleteSpot = async function(id) {
+            if(!confirm("本当に削除しますか？")) return;
+            await deleteDoc(doc(db, "spots", id));
+            alert("削除しました"); loadAdminData();
+        };
     </script>
 </body>
 </html>
