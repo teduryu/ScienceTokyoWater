@@ -1,167 +1,77 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <link rel="icon" href="icon.png" type="image/png">
-    <link rel="apple-touch-icon" href="pwaicon.png" type="image/png">
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#007AFF">
-    <title>ScienceTokyoWater</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者ダッシュボード - ScienceTokyoWater</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    
     <style>
         :root {
-            --primary: #007AFF; --primary-hover: #005bb5; --primary-light: #E5F1FF;
-            --bg-base: #F2F4F7; --surface: #FFFFFF; --text-main: #1C1C1E; --text-sub: #8E8E93;
-            --border: #E5E5EA; --danger: #FF3B30;
+            --primary: #007AFF; --bg-base: #F2F4F7; --surface: #FFFFFF;
+            --text-main: #1C1C1E; --text-sub: #8E8E93; --danger: #FF3B30;
+            --success: #34C759; --border: #E5E5EA;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 0; overflow-x: hidden; }
-        
-        /* Layout */
-        .header { background: var(--surface); padding: 12px 16px; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { margin: 0; font-size: 1.2rem; color: var(--primary); }
-        
-        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); display: flex; border-top: 1px solid var(--border); z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-item { flex: 1; padding: 10px 0; text-align: center; font-size: 0.75rem; color: var(--text-sub); cursor: pointer; transition: color 0.2s; }
-        .nav-item.active { color: var(--primary); font-weight: bold; }
-        .nav-icon { font-size: 1.4rem; display: block; margin-bottom: 2px; }
-
-        .content { padding-bottom: 80px; }
-        .view-section { display: none; min-height: 100vh; }
-        .view-section.active { display: block; }
-
-        /* Map */
-        #main-map, #add-map { width: 100%; height: calc(100vh - 120px); z-index: 1; }
-        #add-map { height: 250px; border-radius: 12px; margin: 12px 0; border: 1px solid var(--border); }
-
-        /* UI Components */
-        .card { background: var(--surface); border-radius: 16px; padding: 16px; margin: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; transition: background 0.2s; }
-        .btn:disabled { background: var(--text-sub); opacity: 0.6; }
-        .input-group { margin-bottom: 16px; }
-        label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 6px; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: inherit; }
-        
-        /* Detail View */
-        .detail-img { width: 100%; border-radius: 12px; object-fit: cover; margin-bottom: 16px; }
-        .comment-item { border-bottom: 1px solid var(--border); padding: 12px 0; }
-        .comment-meta { font-size: 0.8rem; color: var(--text-sub); }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: var(--surface); border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        h1, h2, h3 { color: var(--primary); margin-top: 0; }
+        h2 { border-bottom: 2px solid var(--primary-light); padding-bottom: 8px; margin-bottom: 16px; }
+        .btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem;}
+        .btn-danger { background: white; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-success { background: white; color: var(--success); border: 1px solid var(--success); }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .item-row { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
+        .item-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .item-meta { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 4px; }
+        .item-content { font-size: 1rem; margin-bottom: 12px; white-space: pre-wrap; background: var(--bg-base); padding: 12px; border-radius: 8px;}
+        .spot-img { max-width: 200px; border-radius: 8px; margin-top: 8px; display: block;}
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: var(--border); margin-right: 8px; }
+        .badge-warning { background: #FFF500; color: #333; }
     </style>
 </head>
 <body>
 
-    <header class="header">
-        <h1>ScienceTokyoWater</h1>
-    </header>
+    <div class="container">
+        <div class="flex-between" style="margin-bottom: 20px;">
+            <h1>管理者ダッシュボード</h1>
+            <button id="logout-btn" class="btn btn-danger" style="display: none;">ログアウト</button>
+        </div>
 
-    <main class="content">
-        <section id="view-map" class="view-section active">
-            <div id="main-map"></div>
-        </section>
+        <div id="auth-section" class="card" style="text-align: center;">
+            <p>管理操作を行うには、許可されたGoogleアカウントでログインしてください。</p>
+            <button id="login-btn" class="btn" style="padding: 12px 24px; font-size: 1rem;">Googleでログイン</button>
+            <p id="auth-error" style="color: var(--danger); display: none; margin-top: 10px;"></p>
+        </div>
 
-        <section id="view-list" class="view-section">
-            <div id="spots-list-container"></div>
-        </section>
-
-        <section id="view-add" class="view-section">
+        <div id="admin-dashboard" style="display: none;">
+            <p style="color: var(--text-sub); margin-bottom: 24px;">ログイン中: <strong id="admin-email-disp"></strong></p>
+            
             <div class="card">
-                <h2>スポットを申請する</h2>
-                <form id="add-spot-form">
-                    <div class="input-group">
-                        <label>スポット名</label>
-                        <input type="text" id="add-name" placeholder="例: 1号館1階自販機横" required>
-                    </div>
-                    <label>地図上で場所を選択</label>
-                    <div id="add-map"></div>
-                    <input type="hidden" id="add-lat"><input type="hidden" id="add-lng">
-                    
-                    <div class="input-group">
-                        <label>建物・フロア</label>
-                        <input type="text" id="add-floor" placeholder="例: 大岡山キャンパス 西9号館 2F">
-                    </div>
-                    <div class="input-group">
-                        <label>写真</label>
-                        <input type="file" id="add-image" accept="image/*">
-                    </div>
-                    <button type="submit" id="submit-spot-btn" class="btn">申請を送信</button>
-                    <p style="font-size: 0.75rem; color: var(--text-sub); margin-top: 8px;">※管理者の承認後に公開されます。</p>
-                </form>
+                <h2>1. 承認待ちのスポット</h2>
+                <div id="unapproved-list">読み込み中...</div>
             </div>
-        </section>
 
-        <section id="view-detail" class="view-section">
-            <div id="detail-container"></div>
-        </section>
-    </main>
+            <div class="card">
+                <h2>2. 問題の報告 (未解決)</h2>
+                <div id="reports-list">読み込み中...</div>
+            </div>
 
-    <nav class="nav-bar">
-        <div class="nav-item active" data-target="view-map">
-            <span class="nav-icon">📍</span>マップ
-        </div>
-        <div class="nav-item" data-target="view-list">
-            <span class="nav-icon">📋</span>一覧
-        </div>
-        <div class="nav-item" data-target="view-add">
-            <span class="nav-icon">➕</span>追加
-        </div>
-    </nav>
-
-    <template id="tmpl-spot-card">
-        <div class="card spot-card" style="cursor: pointer;">
-            <div style="display: flex; gap: 12px; align-items: center;">
-                <div class="list-img-thumb" style="width: 60px; height: 60px; background: #eee; border-radius: 8px; overflow: hidden;"></div>
-                <div style="flex: 1;">
-                    <h3 class="card-name" style="margin: 0; font-size: 1rem;"></h3>
-                    <p class="card-meta" style="margin: 4px 0 0; font-size: 0.8rem; color: var(--text-sub);"></p>
-                </div>
+            <div class="card">
+                <h2>3. 最新のコメント管理</h2>
+                <div id="comments-list">読み込み中...</div>
             </div>
         </div>
-    </template>
+    </div>
 
-    <template id="tmpl-detail-content">
-        <div class="card">
-            <button class="btn-back" style="background: none; border: none; color: var(--primary); padding: 0; margin-bottom: 12px; font-weight: bold;">← 戻る</button>
-            <div id="detail-image-box"></div>
-            <h2 class="detail-name" style="margin-top: 0;"></h2>
-            <div class="detail-info" style="font-size: 0.9rem; line-height: 1.6;"></div>
-            
-            <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
-            
-            <h3>コメント</h3>
-            <div id="comments-list"></div>
-            
-            <form id="comment-form" style="margin-top: 20px;">
-                <input type="text" id="comment-name" placeholder="お名前（任意）" style="margin-bottom: 8px;">
-                <textarea id="comment-text" placeholder="コメントを入力..." required style="height: 80px; margin-bottom: 8px;"></textarea>
-                <button type="submit" id="submit-comment-btn" class="btn">送信</button>
-            </form>
-        </div>
-    </template>
-
-    <template id="tmpl-comment-item">
-        <div class="comment-item">
-            <div class="comment-meta">
-                <strong class="cmt-author"></strong> <span class="cmt-date"></span>
-            </div>
-            <div class="cmt-text" style="margin-top: 4px; white-space: pre-wrap;"></div>
-        </div>
-    </template>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { 
-            getFirestore, collection, getDocs, getDoc, doc, addDoc, query, where, orderBy, serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+        // ★修正: orderBy, limit を追加インポート
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, collectionGroup, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        // ★修正: Storageの操作用モジュールをインポート
+        import { getStorage, ref as storageRef, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-        // ===== Configuration =====
+        // Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyD8mhgrQnPLqpXJI9Fq6_PvzxKBVUViLLg", authDomain: "sciencetokyowater.firebaseapp.com",
             projectId: "sciencetokyowater", storageBucket: "sciencetokyowater.firebasestorage.app",
@@ -169,230 +79,208 @@
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app);
+        const auth = getAuth(app);
+        const storage = getStorage(app); // ★修正: Storageを初期化
+        const googleProvider = new GoogleAuthProvider();
 
-        let mainMap, addMap, addMarker;
-        let currentSpots = [];
-        let previousView = 'view-map';
+        // 管理用メールアドレス
+        const ADMIN_EMAILS = ['teduryu@gmail.com'];
 
-        // ===== Utility =====
-        function formatDate(timestamp) {
-            return timestamp ? new Date(timestamp.toMillis()).toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
-        }
+        // XSS対策用
+        function escapeHTML(str) { return typeof str === 'string' ? str.replace(/[&<>'"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[m])) : ''; }
+        function formatDate(timestamp) { return timestamp ? new Date(timestamp.toMillis()).toLocaleString('ja-JP') : '日時不明'; }
 
-        // ===== Data Fetching =====
-        async function loadSpots() {
-            try {
-                // 承認済みスポットのみ取得
-                const q = query(collection(db, "spots"), where("approved", "==", true));
-                const snap = await getDocs(q);
-                currentSpots = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                
-                renderMapMarkers();
-                renderSpotsList();
-            } catch (e) {
-                console.error("データ取得失敗:", e);
+        // スポットのIDと名前を紐付けるためのキャッシュ
+        let spotsCache = {};
+
+        // 認証状態の監視
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if (ADMIN_EMAILS.includes(user.email)) {
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('admin-dashboard').style.display = 'block';
+                    document.getElementById('logout-btn').style.display = 'block';
+                    document.getElementById('admin-email-disp').innerText = user.email;
+                    loadAllAdminData();
+                } else {
+                    document.getElementById('auth-error').style.display = 'block';
+                    document.getElementById('auth-error').innerText = `エラー: アカウント (${user.email}) には管理者権限がありません。`;
+                }
+            } else {
+                document.getElementById('auth-section').style.display = 'block';
+                document.getElementById('admin-dashboard').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'none';
             }
-        }
-
-        // ===== UI Rendering =====
-        function renderMapMarkers() {
-            if (!mainMap) return;
-            // 既存マーカー削除用（今回はシンプルにレイヤーグループを使わずクリア）
-            mainMap.eachLayer(layer => { if (layer instanceof L.Marker) mainMap.removeLayer(layer); });
-
-            currentSpots.forEach(spot => {
-                const marker = L.marker([spot.lat, spot.lng]).addTo(mainMap);
-                marker.bindPopup(`<strong>${spot.name}</strong><br><button onclick="window.showDetail('${spot.id}')" style="margin-top:5px; padding:2px 8px; cursor:pointer;">詳細を見る</button>`);
-            });
-        }
-
-        function renderSpotsList() {
-            const container = document.getElementById('spots-list-container');
-            container.innerHTML = '';
-            const tmpl = document.getElementById('tmpl-spot-card');
-
-            currentSpots.forEach(spot => {
-                const clone = tmpl.content.cloneNode(true);
-                clone.querySelector('.card-name').textContent = spot.name;
-                clone.querySelector('.card-meta').textContent = `${spot.placename || ''} ${spot.floor || ''}`;
-                
-                if (spot.imageUrl) {
-                    const img = document.createElement('img');
-                    img.src = spot.imageUrl;
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.objectFit = 'cover';
-                    clone.querySelector('.list-img-thumb').appendChild(img);
-                }
-                
-                clone.querySelector('.spot-card').addEventListener('click', () => showDetail(spot.id));
-                container.appendChild(clone);
-            });
-        }
-
-        // 詳細表示（グローバル関数化）
-        window.showDetail = async function(spotId) {
-            const container = document.getElementById('detail-container');
-            container.innerHTML = '<div class="card">読み込み中...</div>';
-            switchView('view-detail');
-
-            try {
-                const spotDoc = await getDoc(doc(db, "spots", spotId));
-                if (!spotDoc.exists()) return;
-                const spot = spotDoc.data();
-
-                const tmpl = document.getElementById('tmpl-detail-content');
-                const clone = tmpl.content.cloneNode(true);
-
-                clone.querySelector('.detail-name').textContent = spot.name;
-                clone.querySelector('.detail-info').innerHTML = `
-                    <p>📍 ${spot.placename || '情報なし'} ${spot.floor || ''}</p>
-                    <p>🕒 利用可能時間: ${spot.available_hours || '不明'}</p>
-                    <p>✨ 特徴: ${(spot.features || []).join(', ') || 'なし'}</p>
-                `;
-
-                if (spot.imageUrl) {
-                    const img = document.createElement('img');
-                    img.src = spot.imageUrl;
-                    img.className = 'detail-img';
-                    clone.querySelector('#detail-image-box').appendChild(img);
-                }
-
-                clone.querySelector('.btn-back').onclick = () => switchView(previousView);
-
-                // コメント送信処理
-                const form = clone.querySelector('#comment-form');
-                form.onsubmit = async (e) => {
-                    e.preventDefault();
-                    const btn = form.querySelector('button');
-                    btn.disabled = true;
-                    try {
-                        await addDoc(collection(db, "spots", spotId, "comments"), {
-                            name: form.querySelector('#comment-name').value || "名無しさん",
-                            text: form.querySelector('#comment-text').value,
-                            created_at: serverTimestamp()
-                        });
-                        form.reset();
-                        loadComments(spotId);
-                    } catch (err) { alert("送信に失敗しました"); }
-                    finally { btn.disabled = false; }
-                };
-
-                container.innerHTML = '';
-                container.appendChild(clone);
-                loadComments(spotId);
-
-            } catch (e) { container.innerHTML = 'エラーが発生しました'; }
-        };
-
-        async function loadComments(spotId) {
-            const list = document.getElementById('comments-list');
-            list.innerHTML = '読み込み中...';
-            const q = query(collection(db, "spots", spotId, "comments"), orderBy("created_at", "desc"));
-            const snap = await getDocs(q);
-            
-            list.innerHTML = '';
-            const tmpl = document.getElementById('tmpl-comment-item');
-            snap.forEach(d => {
-                const c = d.data();
-                const clone = tmpl.content.cloneNode(true);
-                clone.querySelector('.cmt-author').textContent = c.name;
-                clone.querySelector('.cmt-date').textContent = formatDate(c.created_at);
-                clone.querySelector('.cmt-text').textContent = c.text;
-                list.appendChild(clone);
-            });
-            if(snap.empty) list.innerHTML = '<p style="color:var(--text-sub); font-size:0.8rem;">コメントはまだありません。</p>';
-        }
-
-        // ===== Map Control =====
-        function initMaps() {
-            mainMap = L.map('main-map').setView([35.6048, 139.6838], 17);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(mainMap);
-            
-            // 追加用マップ
-            addMap = L.map('add-map').setView([35.6048, 139.6838], 17);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(addMap);
-            addMap.on('click', (e) => {
-                if (addMarker) addMap.removeLayer(addMarker);
-                addMarker = L.marker(e.latlng).addTo(addMap);
-                document.getElementById('add-lat').value = e.latlng.lat;
-                document.getElementById('add-lng').value = e.latlng.lng;
-            });
-        }
-
-        // ===== Form Handling =====
-        document.getElementById('add-spot-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const lat = document.getElementById('add-lat').value;
-            const btn = document.getElementById('submit-spot-btn');
-            if (!lat) { alert("地図上で場所を選択してください"); return; }
-
-            btn.disabled = true;
-            btn.textContent = "送信中...";
-
-            try {
-                let imageUrl = "";
-                const file = document.getElementById('add-image').files[0];
-                if (file) {
-                    const fileName = `${Date.now()}_${file.name}`;
-                    const storagePath = storageRef(storage, `spots/${fileName}`);
-                    const uploadSnap = await uploadBytes(storagePath, file);
-                    imageUrl = await getDownloadURL(uploadSnap.ref);
-                }
-
-                await addDoc(collection(db, "spots"), {
-                    name: document.getElementById('add-name').value,
-                    placename: document.getElementById('add-floor').value,
-                    lat: parseFloat(lat),
-                    lng: parseFloat(document.getElementById('add-lng').value),
-                    imageUrl: imageUrl,
-                    approved: false, // 管理者承認待ち
-                    created_at: serverTimestamp()
-                });
-
-                alert("申請を送信しました！管理者の承認をお待ちください。");
-                e.target.reset();
-                if (addMarker) addMap.removeLayer(addMarker);
-                switchView('view-map');
-            } catch (err) {
-                alert("送信に失敗しました: " + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = "申請を送信";
-            }
-        };
-
-        // ===== Navigation =====
-        function switchView(targetId) {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
-            const target = document.getElementById(targetId);
-            if (target) {
-                target.classList.add('active');
-                if (targetId !== 'view-detail') {
-                    previousView = targetId;
-                    const nav = document.querySelector(`.nav-item[data-target="${targetId}"]`);
-                    if (nav) nav.classList.add('active');
-                }
-            }
-            // マップの再描画（サイズ計算ミス防止）
-            if (targetId === 'view-map' && mainMap) mainMap.invalidateSize();
-            if (targetId === 'view-add' && addMap) addMap.invalidateSize();
-            window.scrollTo(0, 0);
-        }
-
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.onclick = () => switchView(item.dataset.target);
         });
 
-        // Initialize
-        initMaps();
-        loadSpots();
+        document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, googleProvider));
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
+        // データを一括で読み込む
+        async function loadAllAdminData() {
+            // まず全スポットの名前を取得してキャッシュ
+            try {
+                const snap = await getDocs(collection(db, "spots"));
+                snap.forEach(d => { spotsCache[d.id] = d.data().name; });
+            } catch(e) { console.error("スポット名のキャッシュに失敗", e); }
+
+            loadUnapprovedSpots();
+            loadReports();
+            loadComments();
+        }
+
+        // 1. 承認待ちスポットの読み込み
+        async function loadUnapprovedSpots() {
+            const list = document.getElementById('unapproved-list');
+            try {
+                const q = query(collection(db, "spots"), where("approved", "==", false));
+                const snap = await getDocs(q);
+                let html = '';
+                snap.forEach(doc => {
+                    const s = doc.data();
+                    html += `
+                        <div class="item-row">
+                            <h3 style="margin-bottom: 4px;">${escapeHTML(s.name)}</h3>
+                            <div class="item-meta">場所: ${escapeHTML(s.placename)} ${s.floor ? `(${escapeHTML(s.floor)})` : ''} | 申請日時: ${formatDate(s.created_at)}</div>
+                            <div class="item-meta">特徴: ${(s.features || []).join(', ')} | 時間: ${escapeHTML(s.available_hours)}</div>
+                            ${s.imageUrl ? `<a href="${s.imageUrl}" target="_blank"><img src="${s.imageUrl}" class="spot-img"></a>` : ''}
+                            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                                <button class="btn" onclick="approveSpot('${doc.id}')">承認して公開</button>
+                                <button class="btn btn-danger" onclick="deleteSpot('${doc.id}')">削除 (却下)</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || '<p>現在、承認待ちのスポットはありません。</p>';
+            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
+        }
+
+        // 2. 未解決の報告の読み込み
+        async function loadReports() {
+            const list = document.getElementById('reports-list');
+            try {
+                const q = query(collection(db, "reports"), where("resolved", "==", false));
+                const snap = await getDocs(q);
+                let html = '';
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    const spotName = spotsCache[r.spotId] || "不明/削除されたスポット";
+                    html += `
+                        <div class="item-row">
+                            <div class="item-meta">
+                                <span class="badge badge-warning">${escapeHTML(r.category)}</span>
+                                対象: <strong>${escapeHTML(spotName)}</strong> (ID: ${r.spotId}) | 報告日時: ${formatDate(r.created_at)}
+                            </div>
+                            <div class="item-content">${escapeHTML(r.text)}</div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-success" onclick="resolveReport('${doc.id}')">解決済みにする</button>
+                                <button class="btn btn-danger" onclick="deleteReport('${doc.id}')">この報告を削除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || '<p>現在、未解決の報告はありません。</p>';
+            } catch (e) { list.innerHTML = `<p style="color:red;">エラー: ${e.message}</p>`; }
+        }
+
+        // 3. 最新コメントの読み込み (collectionGroupを使用)
+        // ★修正: パフォーマンス改善のため、全件取得を廃止し orderBy と limit(30) を使用したクエリに変更
+        async function loadComments() {
+            const list = document.getElementById('comments-list');
+            try {
+                // ※このクエリを実行するにはFirestoreコンソールでインデックスの作成が必要です
+                const q = query(collectionGroup(db, "comments"), orderBy("created_at", "desc"), limit(30));
+                const snap = await getDocs(q);
+                let cmts = [];
+                snap.forEach(d => {
+                    const spotId = d.ref.parent.parent.id;
+                    cmts.push({ id: d.id, spotId: spotId, ...d.data() });
+                });
+                
+                let html = '';
+                cmts.forEach(c => {
+                    const spotName = spotsCache[c.spotId] || "不明/削除されたスポット";
+                    html += `
+                        <div class="item-row">
+                            <div class="item-meta">
+                                スポット: <strong>${escapeHTML(spotName)}</strong> | 
+                                投稿者: ${escapeHTML(c.name) || '名無しさん'} | 
+                                日時: ${formatDate(c.created_at)}
+                            </div>
+                            <div class="item-content">${escapeHTML(c.text)}</div>
+                            <div>
+                                <button class="btn btn-danger" onclick="deleteComment('${c.spotId}', '${c.id}')">このコメントを削除</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || '<p>コメントはまだありません。</p>';
+            } catch (e) { 
+                list.innerHTML = `<p style="color:red;">エラー: ${e.message}<br>※コメントの読み込みに失敗しました。Firebase Consoleで複合インデックス（comments, created_at:降順）が作成されているか確認してください。</p>`; 
+            }
+        }
+
+        // --- 各種アクション（グローバル関数として定義） ---
+
+        window.approveSpot = async function(id) {
+            if(!confirm("承認して一般公開しますか？")) return;
+            await updateDoc(doc(db, "spots", id), { approved: true });
+            alert("承認しました"); loadAllAdminData();
+        };
+
+        // ★修正: スポット削除時に紐づく画像とコメント（サブコレクション）もカスケード削除する
+        window.deleteSpot = async function(id) {
+            if(!confirm("本当に削除しますか？\n紐づく画像やコメントも完全に削除されます。")) return;
+            
+            try {
+                const spotRef = doc(db, "spots", id);
+                const spotSnap = await getDocs(query(collection(db, "spots"), where("__name__", "==", id))); 
+                
+                // 1. Storageの画像を削除
+                if (!spotSnap.empty && spotSnap.docs[0].data().imageUrl) {
+                    const imgUrl = spotSnap.docs[0].data().imageUrl;
+                    try {
+                        const imgRef = storageRef(storage, imgUrl);
+                        await deleteObject(imgRef);
+                    } catch (e) {
+                        console.warn("画像削除スキップ(既に存在しない可能性があります):", e);
+                    }
+                }
+
+                // 2. コメント(サブコレクション)の削除
+                const commentsSnap = await getDocs(collection(db, "spots", id, "comments"));
+                const deletePromises = commentsSnap.docs.map(d => deleteDoc(d.ref));
+                await Promise.all(deletePromises);
+
+                // 3. スポット本体の削除
+                await deleteDoc(spotRef);
+                
+                alert("完全に削除しました");
+                loadAllAdminData();
+            } catch (err) {
+                console.error("削除エラー:", err);
+                alert("削除に失敗しました");
+            }
+        };
+
+        // 報告関連
+        window.resolveReport = async function(id) {
+            if(!confirm("この報告を「解決済み」にしますか？\n(リストから非表示になります)")) return;
+            await updateDoc(doc(db, "reports", id), { resolved: true });
+            loadReports(); 
+        };
+        window.deleteReport = async function(id) {
+            if(!confirm("この報告を完全に削除しますか？")) return;
+            await deleteDoc(doc(db, "reports", id));
+            loadReports();
+        };
+
+        // コメント関連
+        window.deleteComment = async function(spotId, commentId) {
+            if(!confirm("不適切なコメントとして削除しますか？\nこの操作は元に戻せません。")) return;
+            await deleteDoc(doc(db, "spots", spotId, "comments", commentId));
+            alert("コメントを削除しました"); loadComments();
+        };
     </script>
 </body>
 </html>
