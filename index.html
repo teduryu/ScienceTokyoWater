@@ -204,10 +204,28 @@
         .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; transition: transform 0.2s ease; }
         .nav-item.active { color: var(--primary); }
         .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
+        
+        /* トースト通知 UI */
+#toast-container {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 9999; display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none; width: 90%; max-width: 400px;
+}
+.toast {
+    background: rgba(28, 28, 30, 0.9); color: white; padding: 12px 20px;
+    border-radius: 8px; font-size: 0.9rem; font-weight: 700; text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); backdrop-filter: blur(4px);
+    animation: slideDown 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+}
+.toast.error { background: rgba(255, 59, 48, 0.9); }
+.toast.success { background: rgba(52, 199, 89, 0.9); }
+
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
     </style>
 </head>
 <body>
-
+    <div id="toast-container"></div>
     <header id="app-header">
         <img src="menuicon.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
         ScienceTokyoWater
@@ -297,6 +315,7 @@
                 
                 <label>画像 (任意)</label>
                 <input type="file" id="add-image" accept="image/*">
+                <img id="add-image-preview" src="" style="display:none; width:100%; height:auto; max-height:200px; object-fit:contain; margin-top:8px; border-radius:8px; border:1px solid var(--border);">
                 
                 <button type="submit" id="submit-btn" class="btn-large mt-lg">この内容で申請する</button>
             </form>
@@ -370,6 +389,39 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
     <script>
+        // バリデーションチェック関数
+const checkAddFormValidity = () => {
+    const form = document.getElementById('add-spot-form');
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = !form.checkValidity();
+};
+
+// フォームの入力が変わるたびにチェック
+document.getElementById('add-spot-form').addEventListener('input', checkAddFormValidity);
+// 24時間営業ボタンを押した時もチェック（required属性が切り替わるため）
+document.getElementById('btn-24h').addEventListener('click', () => setTimeout(checkAddFormValidity, 0));
+
+// 初期状態でボタンを無効化しておくために初回実行
+checkAddFormValidity();
+        document.getElementById('add-image').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('add-image-preview');
+    if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+    } else {
+        preview.src = '';
+        preview.style.display = 'none';
+    }
+});
+        window.showToast = (message, type = 'info') => {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerText = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+};
         const MAP_TILE_URL = 'https://tile.tracestrack.com/ja/{z}/{x}/{y}.png?key=27e171dc5ca2cc214ecf5ab9d0f493bd';
         const MAP_ATTRIBUTION = '&copy; OpenStreetMap contributors';
         
@@ -502,7 +554,7 @@
         });
 
         function fetchCurrentLocation(btnEl, textElId, defaultText, callback) {
-            if (!navigator.geolocation) return alert("お使いの端末は位置情報に対応していません。");
+            if (!navigator.geolocation) return showToast("お使いの端末は位置情報に対応していません", "error");
             
             const textEl = getById(textElId);
             btnEl.disabled = true; 
@@ -520,7 +572,7 @@
                 () => { 
                     btnEl.disabled = false; 
                     textEl.innerText = defaultText; 
-                    alert("位置情報の取得に失敗しました。"); 
+                    showToast("位置情報の取得に失敗しました", "error"); 
                     if(callback) callback(false); 
                 }, 
                 { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
@@ -604,16 +656,16 @@
         };
 
         const createCompactCard = (spot, onClick) => {
-            const os = isOpen(spot); 
-            const dt = spot.distance ? `<span class="dist-badge">${formatDistance(spot.distance)}</span>` : "";
-            return `
-            <div class="spot-card compact clickable-card" onclick="${onClick}('${spot.id}')">
-                <span class="status-badge ${os ? 'status-open' : 'status-closed'}">${os ? '営業中' : '時間外'}</span>
-                <div class="popup-placename"><span>${escapeHTML(spot.placename)}</span></div>
-                <div class="spot-title">${escapeHTML(spot.name)}</div>
-                <div class="spot-meta">${dt}<span>${escapeHTML(spot.available_hours)||"24時間営業"}</span></div>
-            </div>`;
-        };
+    const os = isOpen(spot); 
+    const dt = spot.distance ? `<span class="dist-badge">${formatDistance(spot.distance)}</span>` : "";
+    return `
+    <div class="spot-card compact clickable-card" data-id="${spot.id}" onclick="${onClick}('${spot.id}')">
+        <span class="status-badge ${os ? 'status-open' : 'status-closed'}">${os ? '営業中' : '時間外'}</span>
+        <div class="popup-placename"><span>${escapeHTML(spot.placename)}</span></div>
+        <div class="spot-title">${escapeHTML(spot.name)}</div>
+        <div class="spot-meta">${dt}<span>${escapeHTML(spot.available_hours)||"24時間営業"}</span></div>
+    </div>`;
+};
 
         function updateLists() {
             const b = map.getBounds();
@@ -658,6 +710,50 @@
         };
 
         map.on('moveend', updateLists);
+        let isPannedByList = false; // 無限ループ防止フラグ
+        let scrollTimeout;
+
+        document.getElementById('map-visible-list').addEventListener('scroll', (e) => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                const scrollList = e.target;
+                const listRect = scrollList.getBoundingClientRect();
+                const listCenter = listRect.left + listRect.width / 2;
+                let closestCard = null;
+                let minDiff = Infinity;
+                
+                // 中央に一番近いカードを探す
+                Array.from(scrollList.children).forEach(card => {
+                    if(!card.classList.contains('spot-card')) return;
+                    const cardRect = card.getBoundingClientRect();
+                    const cardCenter = cardRect.left + cardRect.width / 2;
+                    const diff = Math.abs(listCenter - cardCenter);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestCard = card;
+                    }
+                });
+                
+                if (closestCard) {
+                    const spotId = closestCard.dataset.id;
+                    const spot = allSpots.find(s => s.id === spotId);
+                    if (spot) {
+                        isPannedByList = true; // マップ移動によるリスト再生成を防ぐ
+                        map.panTo([spot.latitude, spot.longitude], { animate: true, duration: 0.5 });
+                        spot.marker.openPopup();
+                    }
+                }
+            }, 150); // スクロール終了判定の待ち時間
+        });
+
+        // 元の map.on('moveend', updateLists); を以下に差し替え
+        map.on('moveend', () => {
+            if (isPannedByList) {
+                isPannedByList = false; // リスト操作での移動時はリストを更新しない
+                return;
+            }
+            updateLists();
+        });
         
         getById("sort-select").addEventListener('change', e => { 
             if (e.target.value === "distance" && !userLocation) { 
@@ -697,7 +793,7 @@
                         const sRef = ref(storage, `spots/${Date.now()}_${Math.random().toString(36).substring(2, 8)}.webp`); 
                         await uploadBytes(sRef, blob); 
                         imageUrl = await getDownloadURL(sRef); 
-                    } catch (err) { alert("画像のアップロードに失敗しました。画像なしで登録します。"); }
+                    } catch (err) { showToast("画像のアップロードに失敗しました。画像なしで登録します。", "error"); }
                 }
                 
                 await addDoc(collection(db, "spots"), { 
@@ -705,11 +801,11 @@
                     latitude: addMap.currentLat, longitude: addMap.currentLng, imageUrl, approved: false, created_at: serverTimestamp() 
                 });
                 
-                alert("申請が完了しました。管理者の承認後にマップに反映されます。"); 
+                showToast("申請が完了しました。管理者の承認後にマップに反映されます。", "success"); 
                 e.target.reset(); 
                 if(is24hMode) btn24h.click(); 
                 document.querySelector('[data-target="view-map"]').click();
-            } catch (err) { alert("送信中にエラーが発生しました。"); } 
+            } catch (err) { showToast("送信中にエラーが発生しました。", "error"); } 
             finally { btn.disabled = false; btn.innerText = "この内容で申請する"; }
         });
 
@@ -722,14 +818,14 @@
 
         window.submitReport = async () => {
             const txt = getById('report-text').value; 
-            if(!txt) return alert("詳細を入力してください。");
+            if(!txt) return showToast("詳細を入力してください。", "error");
             const btn = getById('submit-report-btn');
             btn.disabled = true; btn.innerText = "送信中...";
             try { 
                 await addDoc(collection(db, "reports"), { spotId: window.currentDetailSpotId, category: getById('report-category').value, text: txt, created_at: serverTimestamp(), resolved: false }); 
-                alert("報告を送信しました。ご協力ありがとうございます。"); 
+                showToast("報告を送信しました。ご協力ありがとうございます。", "success"); 
                 closeReportModal(); 
-            } catch { alert("送信に失敗しました。"); } 
+            } catch { showToast("送信に失敗しました。", "error"); } 
             finally { btn.disabled = false; btn.innerText = "送信"; }
         };
 
@@ -763,7 +859,7 @@
                 await loadComments(window.currentDetailSpotId); 
                 btn.innerText = "完了"; 
                 setTimeout(() => { btn.disabled=false; btn.innerText="コメントを送信"; }, 2000); 
-            } catch { alert('送信に失敗しました'); btn.disabled=false; btn.innerText="コメントを送信"; } 
+            } catch { showToast('送信に失敗しました', "error"); btn.disabled=false; btn.innerText="コメントを送信"; } 
         });
 
         loadSpots();
