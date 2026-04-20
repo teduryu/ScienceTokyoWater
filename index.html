@@ -1470,52 +1470,7 @@
             }
         };
 
-        // -----------------------------------------
-        // マップイベント制御 (無限ループ防止)
-        // -----------------------------------------
-        let isPannedByList = false; 
-        let scrollTimeout;
-
-        document.getElementById('map-visible-list').addEventListener('scroll', (e) => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                const scrollList = e.target;
-                const listRect = scrollList.getBoundingClientRect();
-                const listCenter = listRect.left + listRect.width / 2;
-                let closestCard = null;
-                let minDiff = Infinity;
-                
-                // 中央に一番近いカードを探す
-                Array.from(scrollList.children).forEach(card => {
-                    if(!card.classList.contains('spot-card')) return;
-                    const cardRect = card.getBoundingClientRect();
-                    const cardCenter = cardRect.left + cardRect.width / 2;
-                    const diff = Math.abs(listCenter - cardCenter);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closestCard = card;
-                    }
-                });
-                
-                if (closestCard) {
-                    const spotId = closestCard.dataset.id;
-                    const spot = allSpots.find(s => s.id === spotId);
-                    if (spot) {
-                        isPannedByList = true; 
-                        map.panTo([spot.latitude, spot.longitude], { animate: true, duration: 0.5 });
-                        spot.marker.openPopup();
-                    }
-                }
-            }, 150);
-        });
-
-        map.on('moveend', () => {
-            if (isPannedByList) {
-                isPannedByList = false; 
-                return;
-            }
-            updateLists();
-        });
+        map.on('moveend', updateLists);
         
         // -----------------------------------------
         // フィルタ・ソートのイベント
