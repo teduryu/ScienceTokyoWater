@@ -15,361 +15,363 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
     <style>
-        /* 変数定義 */
+        /* ==========================================================
+           1. Variables (変数定義)
+        ========================================================== */
         :root {
-            --primary: #007AFF;
-            --primary-hover: #005bb5;
-            --primary-light: #E5F1FF;
-            --bg-base: #F2F4F7;
-            --surface: #FFFFFF;
-            --text-main: #1C1C1E;
-            --text-sub: #8E8E93;
-            --danger: #FF3B30;
-            --danger-bg: #FFEBEA;
-            --success: #34C759;
-            --success-bg: #EAF9EC;
-            --border: #E5E5EA;
+            /* Colors */
+            --color-primary: #007AFF;
+            --color-primary-hover: #005bb5;
+            --color-primary-light: #E5F1FF;
+            --color-bg-base: #F2F4F7;
+            --color-surface: #FFFFFF;
+            --color-text-main: #1C1C1E;
+            --color-text-sub: #8E8E93;
+            --color-danger: #FF3B30;
+            --color-danger-bg: #FFEBEA;
+            --color-success: #34C759;
+            --color-success-bg: #EAF9EC;
+            --color-border: #E5E5EA;
+
+            /* Map Pins */
             --pin-hot: #FF3B30;
             --pin-machine: #007AFF;
             --pin-tap: #34C759;
             --pin-default: #8E8E93;
+
+            /* Layout & Magic Numbers */
+            --header-height: 60px;
+            --nav-height: 70px;
+            --safe-area-bottom: env(safe-area-inset-bottom);
+            --z-index-map: 1;
+            --z-index-view: 10;
+            --z-index-floating: 1000;
+            --z-index-header-nav: 2000;
+            --z-index-modal: 3000;
         }
 
-        /* 全体のリセットと基本スタイル */
+        /* ==========================================================
+           2. Accessibility & Resets (アクセシビリティとリセット)
+        ========================================================== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             font-family: 'Noto Sans JP', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--bg-base);
-            color: var(--text-main);
-            padding-top: 60px;
-            padding-bottom: calc(70px + env(safe-area-inset-bottom));
+            background-color: var(--color-bg-base);
+            color: var(--color-text-main);
+            padding-top: var(--header-height);
+            padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom));
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
         }
-        * { box-sizing: border-box; }
 
-        /* ユーティリティクラス */
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .flex-center { display: flex; justify-content: center; align-items: center; }
-        .flex-column { display: flex; flex-direction: column; }
-        .gap-sm { gap: 8px; }
-        .gap-md { gap: 16px; }
-        .mb-sm { margin-bottom: 8px; }
-        .mb-md { margin-bottom: 16px; }
-        .mb-lg { margin-bottom: 24px; }
-        .mt-sm { margin-top: 8px; }
-        .mt-md { margin-top: 16px; }
-        .mt-lg { margin-top: 24px; }
-        .text-center { text-align: center; }
-        .text-sub { color: var(--text-sub); font-size: 0.85rem; }
-        .text-danger { color: var(--danger); font-weight: bold; }
-        .w-full { width: 100%; }
+        /* 視覚的に隠すが操作は可能なクラス (チェックボックス等) */
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+        }
 
-        /* ヘッダー */
-        header {
+        /* buttonタグを元のdivと同様の見た目にするリセット */
+        button.nav-item, button.detail-back-btn {
+            appearance: none;
+            background: transparent;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font: inherit;
+            color: inherit;
+            cursor: pointer;
+            text-align: inherit;
+            outline: none;
+        }
+
+        /* ==========================================================
+           3. Layout (大枠の構造)
+        ========================================================== */
+        .l-header {
             background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 60px;
+            height: var(--header-height);
             font-size: 1.15rem;
             font-weight: 700;
-            color: var(--primary);
+            color: var(--color-primary);
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            z-index: 2000;
-            box-shadow: 0 1px 0 var(--border);
+            z-index: var(--z-index-header-nav);
+            box-shadow: 0 1px 0 var(--color-border);
             user-select: none;
         }
         .header-logo { width: 24px; height: 24px; margin-right: 8px; object-fit: contain; border-radius: 4px; }
 
-        /* コンテナとビュー管理 */
-        .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+        .l-container { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+        .l-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 calc(10px + var(--safe-area-bottom)) 0;
+            box-shadow: 0 -1px 0 var(--color-border);
+            z-index: var(--z-index-header-nav);
+        }
+
+        /* ==========================================================
+           4. Views & Maps (ビュー管理とマップ)
+        ========================================================== */
         .view-section { display: none; animation: fadeIn 0.3s ease; }
         .view-section.active { display: block; height: auto; min-height: calc(100vh - 140px); }
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(8px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
-        .section-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 16px 0; color: var(--primary); }
-        .divider { border-top: 1px solid var(--border); margin: 24px 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* マップ表示部 */
-        #view-map.active { position: fixed; top: 0; left: 0; right: 0; bottom: 0; padding: 0; z-index: 10; }
-        #map { width: 100%; height: 100%; z-index: 1; background-color: #e5e3df; }
-        .leaflet-top { top: 65px !important; }
+        .c-map-view.active {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; padding: 0; z-index: var(--z-index-view);
+        }
+        .c-map-element { width: 100%; height: 100%; z-index: var(--z-index-map); background-color: #e5e3df; }
+        .leaflet-top { top: calc(var(--header-height) + 5px) !important; }
+
+        /* ==========================================================
+           5. Components (再利用可能なUI部品)
+        ========================================================== */
+        /* Typography & Dividers */
+        .section-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 16px 0; color: var(--color-primary); }
+        .divider { border-top: 1px solid var(--color-border); margin: 24px 0; }
+
+        /* Buttons */
+        .btn-large {
+            display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+            background: var(--color-primary); color: white; border: none; padding: 16px; font-size: 1rem;
+            border-radius: 12px; cursor: pointer; font-weight: 700; transition: opacity 0.2s;
+        }
+        .btn-large:active { opacity: 0.8; }
+        .btn-large:disabled { background: var(--color-border); color: var(--color-text-sub); cursor: not-allowed; }
+        .btn-secondary { background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-main); }
+        .btn-danger-outline { border-color: var(--color-danger); color: var(--color-danger); background: var(--color-danger-bg); }
+
+        /* Floating UIs */
+        .floating-ui-top {
+            position: absolute; top: calc(var(--header-height) + 16px);
+            left: 50%; transform: translateX(-50%); z-index: var(--z-index-floating); pointer-events: none;
+        }
+        .floating-btn {
+            background: var(--color-primary); color: white; padding: 10px 20px; font-size: 0.9rem;
+            border-radius: 30px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); border: none;
+            font-weight: 700; display: flex; align-items: center; gap: 8px;
+            pointer-events: auto; cursor: pointer; white-space: nowrap; transition: opacity 0.2s;
+        }
+
+        .floating-ui-bottom {
+            position: absolute; bottom: calc(var(--nav-height) + 5px + var(--safe-area-bottom));
+            left: 0; width: 100%; z-index: var(--z-index-floating); pointer-events: none;
+        }
+        .horizontal-scroll-list {
+            pointer-events: auto; display: flex; gap: 12px; overflow-x: auto;
+            padding: 10px 16px 16px 16px; scroll-snap-type: x mandatory; scrollbar-width: none; cursor: grab;
+        }
+
+        /* Cards & Lists */
+        .spot-card {
+            background-color: var(--color-surface); border-radius: 12px; padding: 16px;
+            margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; border: 1px solid var(--color-border);
+        }
+        .spot-title { font-size: 1.1rem; font-weight: 700; margin: 4px 0 8px 0; color: var(--color-text-main); line-height: 1.4; }
+        .spot-meta { font-size: 0.8rem; color: var(--color-text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+        /* Forms & Inputs */
+        form label { display: block; margin: 20px 0 8px 0; font-size: 0.9rem; color: var(--color-text-main); font-weight: 700; }
+        form input[type="text"], form input[type="file"], form textarea, select.form-select {
+            width: 100%; padding: 14px; border: 1px solid var(--color-border); border-radius: 8px;
+            font-size: 1rem; background: var(--color-bg-base); color: var(--color-text-main); outline: none; transition: all 0.2s;
+        }
+        form input:focus, form textarea:focus { border-color: var(--color-primary); background: var(--color-surface); }
         
-        /* Leaflet ポップアップのカスタマイズ */
+        .selectable-label {
+            display: inline-block; padding: 10px 16px; background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: 8px; font-size: 0.9rem;
+            color: var(--color-text-main); cursor: pointer; font-weight: 600; text-align: center; transition: all 0.2s;
+        }
+        .checkbox-hidden:checked + .selectable-label {
+            background: var(--color-primary); color: white; border-color: var(--color-primary);
+        }
+        input:focus-visible + .selectable-label {
+            outline: 2px solid var(--color-primary); outline-offset: 2px;
+        }
+
+        /* Bottom Nav Items */
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem;
+            color: var(--color-text-sub); width: 33.33%; cursor: pointer; transition: color 0.2s ease; font-weight: 600; padding: 4px 0;
+        }
+        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; transition: transform 0.2s ease; }
+        .nav-item.active { color: var(--color-primary); }
+        .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
+
+        /* ==========================================================
+           6. Utility (ユーティリティクラス)
+        ========================================================== */
+        .u-flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .u-flex-column { display: flex; flex-direction: column; }
+        .u-gap-sm { gap: 8px; }
+        .u-gap-md { gap: 16px; }
+        .u-mb-sm { margin-bottom: 8px; }
+        .u-mb-md { margin-bottom: 16px; }
+        .u-mb-lg { margin-bottom: 24px; }
+        .u-mt-lg { margin-top: 24px; }
+        .u-text-center { text-align: center; }
+        .u-text-sub { color: var(--color-text-sub); font-size: 0.85rem; }
+        .u-text-danger { color: var(--color-danger); font-weight: bold; }
+        .u-flex-1 { flex: 1; }
+        .u-flex-2 { flex: 2; }
+        .u-resize-vertical { resize: vertical; }
+        .u-min-h-80 { min-height: 80px; }
+        .is-hidden { display: none !important; }
+
+        /* その他、Leafletポップアップや特定要素の独自スタイルは維持 */
         .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
         .leaflet-popup-content { margin: 14px; font-family: 'Noto Sans JP', sans-serif; width: 220px !important; }
-        .custom-popup { display: flex; flex-direction: column; gap: 6px; }
-        .popup-placename { font-size: 0.75rem; color: var(--text-sub); font-weight: 600; display: flex; gap: 4px; align-items: center; }
-        .popup-floor { background: var(--bg-base); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; color: var(--primary); font-weight: 700; border: 1px solid var(--border); }
-        .popup-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); line-height: 1.3; margin: 0; }
-        .popup-btn { background: var(--primary-light); color: var(--primary); font-weight: 700; padding: 10px; border-radius: 8px; cursor: pointer; border: none; width: 100%; margin-top: 8px; }
-
-        /* マップ上のカスタムピン */
-        .custom-pin { filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25)); display: flex; align-items: center; justify-content: center; }
-        .custom-pin svg { width: 100%; height: 100%; }
-
-        /* フローティングUI (上部・現在地ボタン) */
-        .floating-ui-top { position: absolute; top: 76px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
-        .floating-btn { background: var(--primary); color: white; padding: 10px 20px; font-size: 0.9rem; border-radius: 30px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); border: none; font-weight: 700; display: flex; align-items: center; gap: 8px; pointer-events: auto; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
-        .floating-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        
-        /* フローティングUI (下部・横スクロールリスト) */
-        .floating-ui-bottom { position: absolute; bottom: calc(75px + env(safe-area-inset-bottom)); left: 0; width: 100%; z-index: 1000; pointer-events: none; }
-        .horizontal-scroll-list { pointer-events: auto; display: flex; gap: 12px; overflow-x: auto; padding: 10px 16px 16px 16px; scroll-snap-type: x mandatory; scrollbar-width: none; cursor: grab; }
-        .horizontal-scroll-list:active { cursor: grabbing; }
-        .horizontal-scroll-list::-webkit-scrollbar { display: none; }
-        #map-visible-list .spot-card { flex: 0 0 85%; scroll-snap-align: center; margin-bottom: 0; padding: 12px; }
-        
-        .empty-message-pill { background: rgba(255,255,255,0.95); padding: 12px 24px; border-radius: 30px; margin: 0 auto; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid var(--border); pointer-events: auto; }
-
-        /* スポットカード UI */
-        .spot-card { background-color: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; border: 1px solid var(--border); }
-        .clickable-card { cursor: pointer; transition: background-color 0.2s ease; }
-        .clickable-card:active { background-color: var(--bg-base); }
-        .spot-card.compact .spot-title { font-size: 1rem; margin: 2px 0 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .spot-card.compact .status-badge { top: 12px; right: 12px; }
-        
-        /* ステータスバッジ (営業中/時間外) */
-        .status-badge { position: absolute; top: 16px; right: 16px; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
-        .status-open { background: var(--success-bg); color: var(--success); }
-        .status-closed { background: var(--danger-bg); color: var(--danger); }
-        
-        /* スポット情報テキスト */
-        .spot-title { font-size: 1.1rem; font-weight: 700; margin: 4px 0 8px 0; color: var(--text-main); line-height: 1.4; }
-        .spot-meta { font-size: 0.8rem; color: var(--text-sub); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .dist-badge { background: var(--primary-light); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: var(--primary); }
-        .feature-badge { display: inline-block; padding: 4px 8px; background: var(--bg-base); color: var(--text-sub); border: 1px solid var(--border); border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
-
-        /* ボタン類 */
-        .btn-large { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--primary); color: white; border: none; padding: 16px; font-size: 1rem; border-radius: 12px; cursor: pointer; font-weight: 700; transition: opacity 0.2s; }
-        .btn-large:active { opacity: 0.8; }
-        .btn-large:disabled { background: var(--border); color: var(--text-sub); cursor: not-allowed; }
-        .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text-main); }
-        .btn-danger-outline { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
-
-        /* フィルタ・ソート等のコントロール */
-        .controls-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-        .control-chip { background: var(--surface); padding: 10px 16px; border-radius: 30px; font-size: 0.85rem; border: 1px solid var(--border); color: var(--text-main); cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .control-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
-        select.control-chip { appearance: none; padding-right: 32px; background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" stroke="%231C1C1E" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>'); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; }
-
-        /* フォーム要素 */
-        form label { display: block; margin: 20px 0 8px 0; font-size: 0.9rem; color: var(--text-main); font-weight: 700; }
-        form input[type="text"], form input[type="file"], form textarea, select.form-select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--bg-base); color: var(--text-main); outline: none; transition: all 0.2s; }
-        form input:focus, form textarea:focus { border-color: var(--primary); background: var(--surface); }
-        form input:disabled { background-color: var(--border); opacity: 0.6; cursor: not-allowed; color: var(--text-sub); }
-        .input-row { display: flex; gap: 8px; }
-        
-        /* 選択式ボタン (チェックボックスの代用) */
-        .checkbox-hidden { display: none; }
-        .selectable-label { display: inline-block; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; color: var(--text-main); cursor: pointer; font-weight: 600; text-align: center; transition: all 0.2s; }
-        .checkbox-hidden:checked + .selectable-label { background: var(--primary); color: white; border-color: var(--primary); }
-        .features-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .days-grid { display: flex; width: 100%; gap: 4px; }
-        .days-grid .selectable-label { flex: 1; padding: 10px 0; font-size: 0.8rem; }
-
-        /* 追加画面用のマップコンテナ */
-        .add-map-container { position: relative; height: 200px; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background-color: #e5e3df; margin-bottom: 8px; }
-        .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: 1000; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25)); transition: transform 0.1s; }
+        .add-map-container { position: relative; height: 200px; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-border); background-color: #e5e3df; margin-bottom: 8px; }
+        .center-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); z-index: var(--z-index-floating); pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.25)); transition: transform 0.1s; }
         .center-pin.moving { transform: translate(-50%, -120%); }
-
-        /* 詳細画面 UI */
-        .detail-image { width: 100%; height: 240px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; background-color: var(--bg-base); border: 1px solid var(--border); }
-        .detail-back-btn { background: none; border: none; color: var(--primary); font-size: 1rem; font-weight: 700; padding: 8px 0; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-        
-        /* コメント表示 UI */
-        .comment-item { background: var(--bg-base); padding: 16px; border-radius: 12px; margin-bottom: 12px; }
-        .comment-header { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; }
-        .comment-name { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
-        .comment-text { font-size: 0.95rem; white-space: pre-wrap; line-height: 1.5; }
-        .comments-list-wrapper { max-height: 350px; overflow-y: auto; margin-bottom: 16px; }
-
-        /* モーダル UI */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(2px); }
-        .modal-content { background: white; width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .modal-content h3 { margin-top: 0; color: var(--text-main); font-size: 1.2rem; margin-bottom: 8px; }
-
-        /* ボトムナビゲーション */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px); display: flex; justify-content: space-around; padding: 10px 0 calc(10px + env(safe-area-inset-bottom)) 0; box-shadow: 0 -1px 0 var(--border); z-index: 2000; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-sub); width: 33.33%; cursor: pointer; transition: color 0.2s ease; font-weight: 600; padding: 4px 0; }
-        .nav-item svg { width: 24px; height: 24px; margin-bottom: 4px; stroke: currentColor; transition: transform 0.2s ease; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item.active svg { transform: translateY(-2px); stroke-width: 2.5px; }
     </style>
 </head>
 <body>
 
-    <header id="app-header">
-        <img src="menuicon.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+<div class="app-container">
+    <header id="app-header" class="l-header">
+        <img src="menuicon.png" alt="Logo" class="header-logo" onerror="this.classList.add('is-hidden')">
         ScienceTokyoWater
     </header>
 
-    <div id="view-map" class="view-section active">
-        <div id="map"></div>
-        <div class="floating-ui-top">
-            <button id="gps-btn" class="floating-btn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
-                <span id="gps-btn-text">現在地周辺を検索</span>
-            </button>
-        </div>
-        <div class="floating-ui-bottom">
-            <div id="map-visible-list" class="horizontal-scroll-list"></div>
-        </div>
-    </div>
-
-    <div class="container view-section" id="view-list">
-        <h2 class="section-title">スポット一覧</h2>
-        <div class="controls-row">
-            <select id="sort-select" class="control-chip">
-                <option value="default">名前順</option>
-                <option value="distance">現在地に近い順</option>
-            </select>
-            <div id="filter-open" class="control-chip">
-                <span style="display:inline-block; width:8px; height:8px; background:var(--success); border-radius:50%; margin-right:6px;"></span>営業中のみ
-            </div>
-        </div>
-        <div id="full-spot-list">
-            <p class="text-center text-sub mt-lg">読み込み中...</p>
-        </div>
-    </div>
-
-    <div class="container view-section" id="view-add">
-        <h2 class="section-title">新規スポットの追加</h2>
-        <p class="text-sub mb-lg">見つけた給水スポットを登録して共有しましょう。<br><span class="text-danger">※管理者の承認後にマップに表示されます。</span></p>
-        <div class="spot-card">
-            <form id="add-spot-form">
-                <label>スポット名 (必須)</label>
-                <input type="text" id="add-name" required placeholder="例: 西3号館 ウォーターサーバー">
-                
-                <label>建物名・エリア と 階数 (必須)</label>
-                <div class="input-row">
-                    <input type="text" id="add-placename" required placeholder="建物名 (例: 本館)" style="flex: 2;">
-                    <input type="text" id="add-floor" placeholder="階数 (例: 3階)" style="flex: 1;">
-                </div>
-                
-                <label>場所の指定 (地図を動かしてピンを合わせる)</label>
-                <div class="add-map-container">
-                    <div id="add-map" style="width: 100%; height: 100%; z-index: 1;"></div>
-                    <div id="center-pin" class="center-pin">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--danger)" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>
-                    </div>
-                </div>
-                <button type="button" id="btn-get-location" class="btn-large btn-secondary mb-md">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> 
-                    <span id="add-gps-text">現在地を取得</span>
-                </button>
-                
-                <label>設備の特徴 (複数選択可)</label>
-                <div class="features-grid">
-                    <input type="checkbox" id="f1" name="features" value="給水機" class="checkbox-hidden"><label for="f1" class="selectable-label">給水機</label>
-                    <input type="checkbox" id="f2" name="features" value="蛇口" class="checkbox-hidden"><label for="f2" class="selectable-label">蛇口</label>
-                    <input type="checkbox" id="f3" name="features" value="お湯" class="checkbox-hidden"><label for="f3" class="selectable-label">お湯</label>
-                </div>
-                
-                <label>利用可能時間 (必須)</label>
-                <div class="input-row" style="align-items: center;">
-                    <input type="time" id="add-hours-start" required style="flex: 1;">
-                    <span style="font-weight: bold; color: var(--text-sub);">〜</span>
-                    <input type="time" id="add-hours-end" required style="flex: 1;">
-                    <button type="button" id="btn-24h" class="control-chip">24時間営業</button>
-                </div>
-                
-                <label>休業日</label>
-                <div class="days-grid">
-                    <input type="checkbox" id="d1" name="closed_days" value="1" class="checkbox-hidden"><label for="d1" class="selectable-label">月</label>
-                    <input type="checkbox" id="d2" name="closed_days" value="2" class="checkbox-hidden"><label for="d2" class="selectable-label">火</label>
-                    <input type="checkbox" id="d3" name="closed_days" value="3" class="checkbox-hidden"><label for="d3" class="selectable-label">水</label>
-                    <input type="checkbox" id="d4" name="closed_days" value="4" class="checkbox-hidden"><label for="d4" class="selectable-label">木</label>
-                    <input type="checkbox" id="d5" name="closed_days" value="5" class="checkbox-hidden"><label for="d5" class="selectable-label">金</label>
-                    <input type="checkbox" id="d6" name="closed_days" value="6" class="checkbox-hidden"><label for="d6" class="selectable-label">土</label>
-                    <input type="checkbox" id="d0" name="closed_days" value="0" class="checkbox-hidden"><label for="d0" class="selectable-label">日</label>
-                    <input type="checkbox" id="d7" name="closed_days" value="7" class="checkbox-hidden"><label for="d7" class="selectable-label">祝</label>
-                </div>
-                
-                <label>画像 (任意)</label>
-                <input type="file" id="add-image" accept="image/*">
-                
-                <button type="submit" id="submit-btn" class="btn-large mt-lg">この内容で申請する</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="view-detail" class="view-section">
-        <div class="container">
-            <button class="detail-back-btn" onclick="goBack()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> 戻る
-            </button>
-            
-            <div class="spot-card">
-                <img id="detail-image" class="detail-image" src="" alt="スポット画像" style="display:none;">
-                <div id="detail-placename" class="popup-placename mb-sm"></div>
-                <h2 id="detail-title" class="spot-title" style="font-size: 1.5rem;"></h2>
-                <div id="detail-features" class="mb-md"></div>
-                <div id="detail-meta" class="spot-meta mb-lg" style="font-size: 1rem;"></div>
-                
-                <button class="btn-large" onclick="flyToSpotFromDetail()">地図で場所を確認</button>
-                <button class="btn-large btn-danger-outline mt-md" onclick="openReportModal()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> 
-                    情報の修正・問題を報告
+    <main id="main-content" style="flex:1; display:flex; flex-direction:column;">
+        
+        <section id="view-map" class="view-section c-map-view active">
+            <div id="map" class="c-map-element"></div>
+            <div class="floating-ui-top">
+                <button type="button" id="gps-btn" class="floating-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span id="gps-btn-text">現在地周辺を検索</span>
                 </button>
             </div>
-            
-            <div class="divider"></div>
-            
-            <h3 class="section-title">コメント</h3>
-            <div id="detail-comments-list" class="comments-list-wrapper"></div>
-            <form id="add-comment-form" class="flex-column gap-sm">
-                <input type="text" id="comment-name" placeholder="お名前 (省略可)">
-                <textarea id="comment-text" required placeholder="コメントを入力..." style="resize: vertical; min-height: 80px;" class="mb-sm"></textarea>
-                <button type="submit" id="submit-comment-btn" class="btn-large btn-secondary">コメントを送信</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="report-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>問題の報告</h3>
-            <p class="text-sub mb-md">スポットに問題がある場合はお知らせください。</p>
-            <select id="report-category" class="form-select mb-md">
-                <option value="撤去・閉鎖">撤去・閉鎖されている</option>
-                <option value="情報の誤り">場所や時間などが間違っている</option>
-                <option value="その他">その他</option>
-            </select>
-            <textarea id="report-text" placeholder="詳細をご記入ください" style="resize: vertical; min-height:80px;" class="mb-md"></textarea>
-            <div class="flex-between gap-md">
-                <button onclick="closeReportModal()" class="btn-large btn-secondary">キャンセル</button>
-                <button onclick="submitReport()" class="btn-large" id="submit-report-btn">送信</button>
+            <div class="floating-ui-bottom">
+                <div id="map-visible-list" class="horizontal-scroll-list"></div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div class="bottom-nav">
-        <div class="nav-item active" data-target="view-map">
+        <section id="view-list" class="view-section">
+            <div class="l-container">
+                <h2 class="section-title">スポット一覧</h2>
+                <div id="full-spot-list">
+                    <p class="u-text-center u-text-sub u-mt-lg">読み込み中...</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-add" class="view-section">
+            <div class="l-container">
+                <h2 class="section-title">新規スポットの追加</h2>
+                <p class="u-text-sub u-mb-lg">見つけた給水スポットを登録して共有しましょう。<br><span class="u-text-danger">※管理者の承認後にマップに表示されます。</span></p>
+                
+                <article class="spot-card">
+                    <form id="add-spot-form">
+                        <label for="add-name">スポット名 (必須)</label>
+                        <input type="text" id="add-name" required placeholder="例: 西3号館 ウォーターサーバー">
+                        
+                        <label>建物名・エリア と 階数 (必須)</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="add-placename" class="u-flex-2" required placeholder="建物名 (例: 本館)">
+                            <input type="text" id="add-floor" class="u-flex-1" placeholder="階数 (例: 3階)">
+                        </div>
+                        
+                        <label>場所の指定 (地図を動かしてピンを合わせる)</label>
+                        <div class="add-map-container">
+                            <div id="add-map" style="width: 100%; height: 100%; z-index: 1;"></div>
+                            <div id="center-pin" class="center-pin">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="var(--color-danger)" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="white"></circle></svg>
+                            </div>
+                        </div>
+                        
+                        <button type="button" id="btn-get-location" class="btn-large btn-secondary u-mb-md">
+                            <span id="add-gps-text">現在地を取得</span>
+                        </button>
+                        
+                        <label>設備の特徴 (複数選択可)</label>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                            <input type="checkbox" id="f1" name="features" value="給水機" class="visually-hidden">
+                            <label for="f1" class="selectable-label">給水機</label>
+                            <input type="checkbox" id="f2" name="features" value="蛇口" class="visually-hidden">
+                            <label for="f2" class="selectable-label">蛇口</label>
+                            <input type="checkbox" id="f3" name="features" value="お湯" class="visually-hidden">
+                            <label for="f3" class="selectable-label">お湯</label>
+                        </div>
+                        
+                        <button type="submit" id="submit-btn" class="btn-large u-mt-lg">この内容で申請する</button>
+                    </form>
+                </article>
+            </div>
+        </section>
+
+        <section id="view-detail" class="view-section">
+            <div class="l-container">
+                <button type="button" class="detail-back-btn u-mb-md" onclick="goBack()" aria-label="戻る">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg> 戻る
+                </button>
+                
+                <article class="spot-card">
+                    <h2 id="detail-title" class="spot-title" style="font-size: 1.5rem;"></h2>
+                    <div id="detail-meta" class="spot-meta u-mb-lg"></div>
+                    <button type="button" class="btn-large" onclick="flyToSpotFromDetail()">地図で場所を確認</button>
+                </article>
+                
+                <div class="divider"></div>
+                <h3 class="section-title">コメント</h3>
+                <div id="detail-comments-list"></div>
+                
+                <form id="add-comment-form" class="u-flex-column u-gap-sm">
+                    <input type="text" id="comment-name" placeholder="お名前 (省略可)">
+                    <textarea id="comment-text" required placeholder="コメントを入力..." class="u-resize-vertical u-min-h-80 u-mb-sm"></textarea>
+                    <button type="submit" id="submit-comment-btn" class="btn-large btn-secondary">コメントを送信</button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="l-bottom-nav">
+        <button type="button" class="nav-item active" data-target="view-map" aria-label="マップ">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
             <span>マップ</span>
-        </div>
-        <div class="nav-item" data-target="view-list">
+        </button>
+        <button type="button" class="nav-item" data-target="view-list" aria-label="リスト">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
             <span>リスト</span>
-        </div>
-        <div class="nav-item" data-target="view-add">
+        </button>
+        <button type="button" class="nav-item" data-target="view-add" aria-label="追加">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
             <span>追加</span>
-        </div>
-    </div>
+        </button>
+    </nav>
+</div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
-    <script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
         const MAP_TILE_URL = 'https://tile.tracestrack.com/ja/{z}/{x}/{y}.png?key=27e171dc5ca2cc214ecf5ab9d0f493bd';
         const MAP_ATTRIBUTION = '&copy; OpenStreetMap contributors';
         
@@ -785,5 +787,6 @@
             });
         });
     </script>
+
 </body>
 </html>
